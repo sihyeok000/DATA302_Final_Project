@@ -119,8 +119,8 @@ def overlay_video(video, json_path, glb, out, side_by_side=False, grid=False):
     reader = imageio.get_reader(video, "ffmpeg")
     fps = reader.get_meta_data().get("fps", 30)
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
-    writer = imageio.get_writer(out, "ffmpeg", fps=fps, codec="libx264", quality=8, pixelformat="yuv420p",
-                                macro_block_size=2)
+    writer = imageio.get_writer(out, "ffmpeg", fps=fps, codec="libx264", quality=None, pixelformat="yuv420p",
+                                macro_block_size=2, output_params=["-crf", "20"])
     picks, tiles = set(np.linspace(0, r["F"] - 1, min(8, r["F"])).round().astype(int)), []
     n = 0
     try:

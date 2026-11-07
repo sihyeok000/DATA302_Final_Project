@@ -8,7 +8,7 @@ results/*.json
 results/*.glb
 results.zip
 check_*.jpg
-overlays/
+/overlays/
 
 # python / weights
 __pycache__/

@@ -37,7 +37,7 @@ Fork or copy this repository and keep this structure. Your code submission is th
 ```
 DATA302_Final_Project/
 ├── README.md          # this file (rules + exact output format)
-├── examples/          # example_01.json + example_01.glb: a small, valid output (§6.8)
+├── examples/          # a real example clip + a valid output for it + its overlay video (§6.8)
 ├── tools/overlay.py   # draws your results on the input video -> overlay video (§6.8)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # MANO_RIGHT.pkl goes here (NOT included, §3)
@@ -142,7 +142,7 @@ results/
 ### 6.3 JSON keys
 
 The structure below is annotated for reading (`//` comments and `…` are not part of the file).
-`examples/example_01.json` is a complete, valid file.
+`examples/results/example_01.json` is a complete, valid file.
 
 ```text
 {
@@ -184,7 +184,7 @@ joints   = out.joints.detach().numpy()     # (F, 16, 3)
 
 * **`flat_hand_mean=True`**: `hand_pose = 0` is the flat open hand. With `False` (smplx's default)
   the MANO mean pose (about 33° per finger joint) is added to your numbers, and the same 48
-  numbers give another hand (on our example video the fingertips move by 6 cm).
+  numbers give another hand (on the example clip of §6.8 the fingertips move by about 6 cm).
   Convert if your model uses the other setting.
 * **`transl`** is added to all vertices after the hand is rotated about its wrist joint (smplx). It
   is **not** the wrist position (the wrist is about 9.6 cm from the MANO origin).
@@ -261,14 +261,26 @@ A 300-frame video gives a JSON file of about 6 MB.
 
 ### 6.8 Example files and self-checks
 
-`examples/example_01.json` + `examples/example_01.glb` are a complete output for a made-up 3-frame
-clip (there are no frames for it). Everything in it is consistent: `vertices` and `joints` are the
-MANO forward output of its `pose`, `betas`, `transl` with the course settings, and the object is a
-box (12 × 6 × 4 cm) centred at its centroid. Use it to check your setup:
+`examples/` holds a short clip from a public dataset (not one of the course videos; source and
+license in `examples/ATTRIBUTION.md`) and a complete, valid output for it:
+
+```
+examples/
+├── videos/example_01.mp4         # input: 150 frames, 640 × 480, 30 fps (+ videos.json)
+├── results/example_01.json       # output in the format of this section
+├── results/example_01.glb        # object mesh, centred at its centroid
+└── overlays/example_01.mp4/.jpg  # tools/overlay.py drawing of the output on the input
+```
+
+The output was made from the dataset's annotations **with errors added on purpose** (hand pose and
+depth, object size, rotation and depth, focal length), so it is close to, but visibly not on, the hand
+and the object. It shows the file format, not the accuracy you should reach. Everything in it is
+consistent: `vertices` and `joints` are the MANO forward output of its `pose`, `betas`, `transl` with
+the course settings, and the mesh is centred at its centroid. Use it to check your setup:
 
 ```python
 import json, numpy as np, torch, smplx, trimesh
-ex = json.load(open("examples/example_01.json"))
+ex = json.load(open("examples/results/example_01.json"))
 
 # 1) MANO settings: your forward pass must reproduce the example vertices
 mano = smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)
@@ -279,19 +291,28 @@ out = mano(global_orient=pose[:, :3], hand_pose=pose[:, 3:],
 print(np.abs(out.vertices.detach().numpy() - np.array(ex["mano"]["vertices"])).max())   # < 1e-4
 
 # 2) mesh centred at its centroid
-print(trimesh.load("examples/example_01.glb", force="mesh").centroid)                   # ~ (0, 0, 0)
+print(trimesh.load("examples/results/example_01.glb", force="mesh").centroid)           # ~ (0, 0, 0)
 ```
 
 3) **Rotation layout**: decoding `ex["object"]["rot6d"][0]` with the code in §6.5 must give
 (reading the 6 numbers as columns instead would give the transpose)
 
 ```
-R_0 = [[ 0.7862, -0.3844, -0.4838],
-       [ 0.1564,  0.8812, -0.4461],
-       [ 0.5978,  0.2750,  0.7530]]
+R_0 = [[ 0.6139, -0.1837, -0.7677],
+       [-0.3414,  0.8151, -0.4680],
+       [ 0.7118,  0.5494,  0.4376]]
 ```
 
-4) **On your own videos**: draw your results on the input video with the provided tool. It reads
+4) **Overlay tool on the example**: this must reproduce `examples/overlays/example_01.mp4`:
+
+```bash
+python tools/overlay.py --video examples/videos/example_01.mp4 --json examples/results/example_01.json \
+                        --out overlays/example_01.mp4 --side-by-side --grid
+```
+
+![example overlay](examples/overlays/example_01.jpg)
+
+5) **On your own videos**: draw your results on the input video with the provided tool. It reads
 your files exactly as the grader does (rotation layout, centred mesh, your intrinsics), so what you
 see is what is graded. Install `pip install numpy trimesh pillow imageio imageio-ffmpeg`, then from
 the repository root:
