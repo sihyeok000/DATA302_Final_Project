@@ -1,0 +1,19 @@
+# MANO (license: no redistribution)
+mano_models/*.pkl
+mano_models/*.npz
+
+# data and outputs
+data/*/
+results/*.json
+results/*.glb
+results.zip
+check_*.jpg
+
+# python / weights
+__pycache__/
+*.pyc
+.venv/
+*.pth
+*.ckpt
+*.safetensors
+checkpoints/
