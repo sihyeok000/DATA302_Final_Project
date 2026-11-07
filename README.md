@@ -351,4 +351,4 @@ cd results && zip ../results.zip *.json *.glb
 | Where | What |
 |---|---|
 | **Leaderboard** | `results.zip` — any number of uploads [TBD: link] |
-| **LMS** | report (PDF), code (make a zip file which only contains main) |
+| **LMS** | `report.pdf`, `main.zip` — report and pipeline code (zip only the `main/` folder) |
