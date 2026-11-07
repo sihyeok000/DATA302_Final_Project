@@ -21,7 +21,7 @@ and reconstructs
 
 all in the **camera frame** of the video.
 
-**Deadline: 2026-12-07** [TBD: time, time zone]
+**Deadline: 2026-12-07** 
 
 **Contents**: [1 Layout](#1-repository-layout) · [2 Environment](#2-environment) ·
 [3 MANO](#3-mano) · [4 Data](#4-data) · [5 Pipeline rules](#5-your-pipeline) ·
@@ -354,6 +354,5 @@ The leaderboard is feedback (§7). The final grade is computed after the deadlin
 * Quantitative benchmark scores of your results, per video, weighted by difficulty:
   object trajectory error, hand trajectory error, contact error [TBD: final metric list].
   Before scoring, translations are aligned to the ground truth using the object **centroid**.
-* Your scoring rule for object pose candidates.
 * Design and analysis of your post-optimization.
 * Report clarity and code quality.
