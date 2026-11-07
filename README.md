@@ -4,7 +4,7 @@
 
 > [!IMPORTANT]
 > 1. **Read this README carefully before you start final project.** 
-> 2. **Follow the output format (§5) exactly.** A file that breaks the format is rejected. Please check every item of §5 and run the self-checks in §5.5.
+> 2. **Follow the output format (§5) exactly.** A file that breaks the format is rejected. Please check every item of §5 and run the self-checks in §5.3.
 
 Design your own pipeline that takes a **monocular RGB video** (fixed camera) and reconstructs
 * the **MANO hand trajectory**,
@@ -13,8 +13,8 @@ Design your own pipeline that takes a **monocular RGB video** (fixed camera) and
 
 **Contents**: [1 Repository layout](#1-repository-layout) ·
 [2 MANO](#2-mano) · [3 Data](#3-data) · [4 Pipeline rules](#4-your-pipeline) ·
-[5 Output format](#5-output-format) · [6 Leaderboard](#6-leaderboard-provisional) ·
-[7 Submission](#7-submission) · [8 Grading](#8-grading-draft)
+[5 Final output format](#5-final-output-format) · [6 Leaderboard](#6-leaderboard-provisional) ·
+[7 Submission](#7-submission)
 
 ---
 
@@ -25,8 +25,8 @@ Fork or clone this repository.
 ```
 DATA302_Final_Project/
 ├── README.md          # 
-├── examples/          # an example clip, a valid output for it, and its overlay (§5.5)
-├── tools/overlay.py   # draws a result on its input frames -> overlay video (§5.5)
+├── examples/          # an example clip, a valid output for it, and its overlay (§5.3)
+├── tools/overlay.py   # draws a result on its input frames -> overlay video (§5.3)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # see §2
 ├── main/              # implement your pipeline here
@@ -46,8 +46,6 @@ The course uses **exactly** these settings; they change the meaning of the pose 
 import smplx
 mano = smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)
 ```
-
-Check your setup with the example file (§5.5).
 
 ## 3. Data
 
@@ -74,13 +72,13 @@ ground truth or annotation of the test videos from any source.
 👾 **AI tools**: allowed for writing code only, not for producing masks, 3D object model estimates, etc.
 
 
-## 5. Output format
+## 5. Final output format
 
-### 5.1 Result files
+### Result files
 
-Save **two files for every video** in `results/`: a JSON file containing the hand and object
-trajectories, and a GLB file containing the object mesh. Use the video ID as the filename
-(e.g. `easy_01.json` and `easy_01.glb`). Submit all 12 files for the six videos.
+Save **two files for every video** in `results/`: (1) a **JSON** file containing the hand and object
+trajectories, and (2) a **GLB** file containing the object mesh. Use the video ID as the filename
+(e.g. `easy_01.json` and `easy_01.glb`). 
 
 ```
 results/
@@ -91,7 +89,7 @@ results/
 └── …                # 6 videos → 12 files
 ```
 
-### 5.2 Conventions
+### Conventions overview
 
 | Item | Convention |
 |---|---|
@@ -99,14 +97,15 @@ results/
 | Length unit | **meters** (vertices, joints, translations) |
 | Intrinsics | **pixels**, at the resolution of the input frames |
 | Frames | `F` is the total number of frames. Entry `t` corresponds to `frames/{t:06d}.jpg`. Provide results for **every frame**; interpolate missing estimates. All values must be finite (no NaN or Infinity) |
-| Hand | right hand, `MANO_RIGHT.pkl`, `use_pca=False`, `flat_hand_mean=True` (§5.3) |
-| Object rotation | 6D representation, **row** layout (§5.3) |
-| Object mesh | `.glb`, scale applied (real size), **centroid at the origin** (§5.4) |
+| Hand | right hand, `MANO_RIGHT.pkl`, `use_pca=False`, `flat_hand_mean=True` (§5.1) |
+| Object rotation | 6D representation, **row** layout (§5.1) |
+| Object mesh | `.glb`, scale applied (real size), **centroid at the origin** (§5.2) |
 | Object pose | object → camera: `X_cam = R @ v + t` for every vertex `v` of the `.glb` |
 
-### 5.3 JSON file (Hand and Object trajectory)
+### 5.1 JSON file (Hand and Object trajectory)
 
-Each JSON file stores the camera intrinsics, MANO parameters and forward outputs, and object
+Save the final reconstructed hand and object trajectorIes and estimated intrinsics as `<video_id>.json`.
+Specifially, each JSON file must contain the camera intrinsics, MANO parameters and forward outputs, and object
 poses for all `F` frames. The `object.mesh` field names the corresponding GLB file in the same
 directory.
 
@@ -134,9 +133,9 @@ See `examples/results/example_01.json` for a complete example.
 }
 ```
 
-#### Hand: MANO parameters and forward outputs
+#### 5.1.1 Hand trajectory
 
-Compute `vertices` and `joints` from the submitted `pose`, `betas`, and `transl` using the
+Compute `vertices` and `joints` of MANO hand mesh from the `pose`, `betas`, and `transl` using the MANO
 forward pass below. The TAs will repeat this computation to verify that your parameters and
 outputs agree, allowing for rounding when saving the JSON.
 
@@ -165,7 +164,7 @@ joints   = out.joints.detach().numpy()     # (F, 16, 3)
   different shape for each frame, select or average those estimates and use the resulting
   vector for every frame.
 
-#### Object: rotation and translation
+#### 5.1.2 Object trajectory
 
 `object.rot6d` stores the **first two rows** of the object-to-camera rotation matrix `R`,
 following the convention used by PyTorch3D
@@ -186,16 +185,16 @@ R = np.stack([b1, b2, np.cross(b1, b2)], axis=1)        # rows b1, b2, b3
 Do not use the first two columns: decoding them as rows produces the transposed (inverse)
 rotation.
 
-`object.transl` stores the position of the object mesh centroid in the camera frame, in meters.
+`object.transl` stores the position of the **object mesh centroid** (§5.2.1) in the camera frame, in meters.
 Together, the rotation and translation map each saved mesh vertex to the camera frame:
 `X_cam = R @ v + t`. If you center the mesh before export, update the translations as shown
-in §5.4 **before writing the JSON**.
+in §5.2.1 **before writing the JSON**.
 
-#### Writing the JSON
+#### 5.1.3 Writing the JSON
 
 Convert arrays to plain JSON lists and round floating-point values to five decimal places.
 In this example, `K` is the camera intrinsic matrix, `rot6d` contains the encoded object
-rotations, and `t` contains the translations for the **centered mesh** (§5.4).
+rotations, and `t` contains the translations for the **centered mesh** (§5.2.1).
 
 ```python
 import json, numpy as np
@@ -214,23 +213,23 @@ with open(f"results/{video_id}.json", "w") as f:
 `allow_nan=False` raises an error if any value is NaN or Infinity. Resolve missing or invalid
 estimates before saving.
 
-### 5.4 GLB file (Object mesh)
+### 5.2 GLB file (Object mesh)
 
-Save the reconstructed object as `<video_id>.glb` with the following properties:
+Save the final reconstructed object as `<video_id>.glb` with the following properties:
 
-* **Real size**: apply the estimated or optimized scale to the vertices and use meters.
 * **Single mesh**: export one triangle mesh without node transforms.
-* **Centered at the origin**: use the area-weighted surface centroid returned by
+* **Real size**: apply the estimated or optimized scale to the vertices and use meters.
+* **Centroid at the origin**: use the area-weighted surface centroid returned by
   `trimesh.load(path, force="mesh").centroid`. Each coordinate must be within 1 mm of zero.
 
-#### Centering the mesh and updating its trajectory
+#### 5.2.1 Centering the mesh and updating its trajectory
 
 The JSON poses must refer to the vertices stored in the GLB. If your estimated poses refer to
 an uncentered mesh, subtract its centroid `c` from the vertices and add `R @ c` to each
 translation. This preserves the object's position in the camera frame:
 `R @ (v - c) + (t + R @ c) = R @ v + t`.
 
-Apply this correction before saving `object.transl` in the JSON (§5.3):
+Apply this correction before saving `object.transl` in the JSON:
 
 ```python
 import numpy as np, trimesh
@@ -247,7 +246,7 @@ assert np.abs(trimesh.load(f"results/{video_id}.glb", force="mesh").centroid).ma
 Export the GLB with `trimesh`, as above. Other exporters may convert axes or add node
 transforms; either change can make the saved mesh inconsistent with the JSON poses.
 
-### 5.5 Example files and self-checks
+### 5.3 Example files and self-checks
 
 `examples/` contains a short clip from a public dataset (not one of the course videos; source
 and license in `examples/ATTRIBUTION.md`) and a complete, valid output for it:
@@ -255,8 +254,8 @@ and license in `examples/ATTRIBUTION.md`) and a complete, valid output for it:
 ```
 examples/
 ├── data/example_01/frames/       # input: 000000.jpg … 000149.jpg (640 × 480), same layout as §3
-├── results/example_01.json       # output in the format of §5.3
-├── results/example_01.glb        # object mesh, centered at its centroid (§5.4)
+├── results/example_01.json       # output in the format of §5.1
+├── results/example_01.glb        # object mesh, centered at its centroid (§5.2)
 └── overlays/example_01.mp4/.jpg  # the output drawn on the input (tools/overlay.py)
 ```
 
@@ -288,7 +287,7 @@ print(trimesh.load("examples/results/example_01.glb", force="mesh").centroid)   
 
 #### Check the rotation convention
 
-Decode `ex["object"]["rot6d"][0]` using the code in §5.3. The result should match the matrix
+Decode `ex["object"]["rot6d"][0]` using the code in §5.1.2. The result should match the matrix
 below to four decimal places:
 
 ```

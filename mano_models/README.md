@@ -11,6 +11,6 @@ mano_models/MANO_RIGHT.pkl
 
 The MANO license does not allow redistribution: do **not** commit the file or put it in your
 submission (`.gitignore` excludes `*.pkl` here). Reading it needs `smplx` and the GitHub version of
-`chumpy` (see the main README, §2).
+`chumpy`.
 
 Course settings: `smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)`.

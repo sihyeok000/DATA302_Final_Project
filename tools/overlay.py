@@ -1,4 +1,4 @@
-"""Draw your results on the input frames and save an overlay video (mp4). Example: README §5.5.
+"""Draw your results on the input frames and save an overlay video (mp4). Example: README §5.3.
 
     python tools/overlay.py --video_id easy_01   # data/easy_01/frames + results/easy_01.json -> overlays/easy_01.mp4
     python tools/overlay.py --all                # every results/*.json
@@ -28,7 +28,7 @@ OBJ_RGB, HAND_RGB = np.array([40, 230, 90]), (90, 230, 255)
 
 
 def rot6d_rows_to_matrix(x):
-    """(F,6) first two ROWS of R -> (F,3,3) (README §5.3)."""
+    """(F,6) first two ROWS of R -> (F,3,3) (README §5.1.2)."""
     a1, a2 = x[:, :3], x[:, 3:]
     b1 = a1 / np.linalg.norm(a1, axis=1, keepdims=True)
     b2 = a2 - (b1 * a2).sum(1, keepdims=True) * b1
@@ -43,7 +43,7 @@ def load_result(json_path, glb_path=None):
     mesh = trimesh.load(glb_path, force="mesh")
     if np.abs(mesh.centroid).max() > 1e-3:
         print(f"WARNING {os.path.basename(glb_path)}: centroid is {np.round(1000 * mesh.centroid, 1)} mm "
-              f"from the origin; the grader rejects this (README §5.4)")
+              f"from the origin; the grader rejects this (README §5.2)")
     verts = np.asarray(d["mano"]["vertices"], np.float64)
     joints16 = np.asarray(d["mano"]["joints"], np.float64)
     return {
@@ -127,7 +127,7 @@ def overlay_video(frames_dir, json_path, glb_path, out, fps=30, side_by_side=Fal
     if n_files != r["F"] or missing:
         raise SystemExit(f"{frames_dir} has {n_files} frames but {json_path} has num_frames = {r['F']}"
                          + (f" (missing {missing[0]:06d}.jpg)" if missing else "")
-                         + ": every frame needs a result (README §5.2)")
+                         + ": every frame needs a result (README §5, Conventions overview)")
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     writer = imageio.get_writer(out, "ffmpeg", fps=fps, codec="libx264", quality=None, pixelformat="yuv420p",
                                 macro_block_size=2, output_params=["-crf", "20"])
