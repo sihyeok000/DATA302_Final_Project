@@ -1,6 +1,6 @@
 # results/
 
-Your outputs, one pair per video (format: main README, §6):
+Your outputs, one pair per video (format: main README §5):
 
 ```
 results/easy_01.json   results/easy_01.glb

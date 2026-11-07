@@ -1,7 +1,10 @@
-"""Draw your results on the input video and save an overlay video (usage: README §6.8).
+"""Draw your results on the input frames and save an overlay video (mp4). Example: README §5.5.
+
+    python tools/overlay.py --video_id easy_01   # data/easy_01/frames + results/easy_01.json -> overlays/easy_01.mp4
+    python tools/overlay.py --all                # every results/*.json
 
 Files are read exactly as the grader reads them, so if the drawing does not lie on the hand and the
-object, one of the conventions in README §6 is wrong.
+object, one of the conventions in README §5 is wrong.
 """
 import argparse
 import glob
@@ -13,7 +16,7 @@ import numpy as np
 import trimesh
 from PIL import Image, ImageDraw, ImageFilter
 
-VIDEO_DIR, RESULTS_DIR, OUT_DIR = "data/videos", "results", "overlays"
+DATA_DIR, RESULTS_DIR, OUT_DIR = "data", "results", "overlays"     # data/<video_id>/frames/{t:06d}.jpg
 
 # 21 joints in OpenPose order = MANO output.joints (16) + 5 fingertip vertices, reordered
 TIP_VERTS = [745, 317, 444, 556, 673]
@@ -25,7 +28,7 @@ OBJ_RGB, HAND_RGB = np.array([40, 230, 90]), (90, 230, 255)
 
 
 def rot6d_rows_to_matrix(x):
-    """(F,6) first two ROWS of R -> (F,3,3) (README §6.5)."""
+    """(F,6) first two ROWS of R -> (F,3,3) (README §5.3)."""
     a1, a2 = x[:, :3], x[:, 3:]
     b1 = a1 / np.linalg.norm(a1, axis=1, keepdims=True)
     b2 = a2 - (b1 * a2).sum(1, keepdims=True) * b1
@@ -40,7 +43,7 @@ def load_result(json_path, glb_path=None):
     mesh = trimesh.load(glb_path, force="mesh")
     if np.abs(mesh.centroid).max() > 1e-3:
         print(f"WARNING {os.path.basename(glb_path)}: centroid is {np.round(1000 * mesh.centroid, 1)} mm "
-              f"from the origin; the grader rejects this (README §6.6)")
+              f"from the origin; the grader rejects this (README §5.4)")
     verts = np.asarray(d["mano"]["vertices"], np.float64)
     joints16 = np.asarray(d["mano"]["joints"], np.float64)
     return {
@@ -117,21 +120,22 @@ def save_grid(tiles, path, width=480):
     sheet.save(path, quality=90)
 
 
-def overlay_video(video, json_path, glb_path, out, side_by_side=False, grid=False):
+def overlay_video(frames_dir, json_path, glb_path, out, fps=30, side_by_side=False, grid=False):
     r = load_result(json_path, glb_path)
-    reader = imageio.get_reader(video, "ffmpeg")
+    n_files = len(glob.glob(os.path.join(frames_dir, "*.jpg")))
+    missing = [t for t in range(r["F"]) if not os.path.isfile(os.path.join(frames_dir, f"{t:06d}.jpg"))]
+    if n_files != r["F"] or missing:
+        raise SystemExit(f"{frames_dir} has {n_files} frames but {json_path} has num_frames = {r['F']}"
+                         + (f" (missing {missing[0]:06d}.jpg)" if missing else "")
+                         + ": every frame needs a result (README §5.2)")
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
-    writer = imageio.get_writer(out, "ffmpeg", fps=reader.get_meta_data().get("fps", 30), codec="libx264",
-                                quality=None, pixelformat="yuv420p", macro_block_size=2,
-                                output_params=["-crf", "20"])
+    writer = imageio.get_writer(out, "ffmpeg", fps=fps, codec="libx264", quality=None, pixelformat="yuv420p",
+                                macro_block_size=2, output_params=["-crf", "20"])
     grid_frames = set(np.linspace(0, r["F"] - 1, min(8, r["F"])).round().astype(int))
-    tiles, n_frames = [], 0
+    tiles = []
     try:
-        for t, frame in enumerate(reader):
-            n_frames += 1
-            if t >= r["F"]:
-                continue                       # keep counting, reported below
-            src = Image.fromarray(frame).convert("RGB")
+        for t in range(r["F"]):
+            src = Image.open(os.path.join(frames_dir, f"{t:06d}.jpg")).convert("RGB")
             img = draw_frame(src, r, t)
             if grid and t in grid_frames:
                 tiles.append(img)
@@ -143,43 +147,38 @@ def overlay_video(video, json_path, glb_path, out, side_by_side=False, grid=Fals
             writer.append_data(np.asarray(img))
     finally:
         writer.close()
-        reader.close()
-    if n_frames != r["F"]:
-        raise SystemExit(f"{video} has {n_frames} frames but {json_path} has num_frames = {r['F']}: "
-                         f"every frame of the video needs a result (README §6.2)")
     if tiles:
         save_grid(tiles, os.path.splitext(out)[0] + ".jpg")
     return out
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--video_id", help="use the default paths for this video id")
     ap.add_argument("--all", action="store_true", help=f"every {RESULTS_DIR}/*.json")
-    ap.add_argument("--video", help=f"input video (default {VIDEO_DIR}/<video_id>.mp4)")
+    ap.add_argument("--frames", help=f"input frames folder (default {DATA_DIR}/<video_id>/frames)")
     ap.add_argument("--json", help=f"result json (default {RESULTS_DIR}/<video_id>.json)")
     ap.add_argument("--glb", help="object mesh (default: the 'object.mesh' file next to the json)")
     ap.add_argument("--out", help=f"output video (default {OUT_DIR}/<video_id>.mp4)")
+    ap.add_argument("--fps", type=float, default=30, help="frame rate of the output video (default 30)")
     ap.add_argument("--side-by-side", action="store_true", help="input and overlay next to each other")
     ap.add_argument("--grid", action="store_true", help="also save an 8-frame overview .jpg next to the video")
     args = ap.parse_args()
 
     if args.all:
-        for path in sorted(glob.glob(os.path.join(RESULTS_DIR, "*.json"))):
-            vid = os.path.basename(path)[:-5]
-            out = overlay_video(os.path.join(VIDEO_DIR, f"{vid}.mp4"), path, None,
-                                os.path.join(OUT_DIR, f"{vid}.mp4"), args.side_by_side, args.grid)
-            print("wrote", out)
+        jobs = [(os.path.basename(p)[:-5], p) for p in sorted(glob.glob(os.path.join(RESULTS_DIR, "*.json")))]
+        jobs = [(os.path.join(DATA_DIR, vid, "frames"), p, None, os.path.join(OUT_DIR, f"{vid}.mp4"))
+                for vid, p in jobs]
     elif args.video_id or args.json:
         vid = args.video_id or os.path.basename(args.json)[:-5]
-        out = overlay_video(args.video or os.path.join(VIDEO_DIR, f"{vid}.mp4"),
-                            args.json or os.path.join(RESULTS_DIR, f"{vid}.json"),
-                            args.glb,
-                            args.out or os.path.join(OUT_DIR, f"{vid}.mp4"),
-                            args.side_by_side, args.grid)
-        print("wrote", out)
+        jobs = [(args.frames or os.path.join(DATA_DIR, vid, "frames"),
+                 args.json or os.path.join(RESULTS_DIR, f"{vid}.json"),
+                 args.glb,
+                 args.out or os.path.join(OUT_DIR, f"{vid}.mp4"))]
     else:
         ap.error("give --video_id, --json or --all")
+    for frames_dir, json_path, glb_path, out in jobs:
+        print("wrote", overlay_video(frames_dir, json_path, glb_path, out, args.fps, args.side_by_side, args.grid))
 
 
 if __name__ == "__main__":

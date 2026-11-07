@@ -26,7 +26,7 @@ Fork or clone this repository.
 DATA302_Final_Project/
 ├── README.md          # 
 ├── examples/          # an example clip, a valid output for it, and its overlay (§5.5)
-├── tools/overlay.py   # draws a result on its video (§5.5)
+├── tools/overlay.py   # draws a result on its input frames -> overlay video (§5.5)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # see §2
 ├── main/              # implement your pipeline here
@@ -254,7 +254,7 @@ and license in `examples/ATTRIBUTION.md`) and a complete, valid output for it:
 
 ```
 examples/
-├── videos/example_01.mp4         # input: 150 frames, 640 × 480, 30 fps (+ videos.json)
+├── data/example_01/frames/       # input: 000000.jpg … 000149.jpg (640 × 480), same layout as §3
 ├── results/example_01.json       # output in the format of §5.3
 ├── results/example_01.glb        # object mesh, centered at its centroid (§5.4)
 └── overlays/example_01.mp4/.jpg  # the output drawn on the input (tools/overlay.py)
@@ -299,12 +299,12 @@ R_0 = [[ 0.6139, -0.1837, -0.7677],
 
 #### Check the example overlay
 
-`examples/overlays/example_01.mp4` shows the example output drawn on its input video (left:
+`examples/overlays/example_01.mp4` shows the example output drawn on its input frames (left:
 input, right: overlay; object in green, hand vertices in cyan with a 21-joint skeleton).
 `tools/overlay.py` reproduces it (`pip install numpy trimesh pillow imageio imageio-ffmpeg`):
 
 ```bash
-python tools/overlay.py --video examples/videos/example_01.mp4 --json examples/results/example_01.json \
+python tools/overlay.py --frames examples/data/example_01/frames --json examples/results/example_01.json \
                         --out overlays/example_01.mp4 --side-by-side --grid
 ```
 

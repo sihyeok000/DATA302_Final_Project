@@ -15,7 +15,6 @@ Changes made by the course TAs:
 
 | File | What it is |
 |---|---|
-| `videos/example_01.mp4` | the colour frames of that camera and frame range, encoded as H.264 at 30 fps |
-| `videos/videos.json` | frame count, fps and size of the clip (same layout as `data/videos/videos.json`) |
-| `results/example_01.json`, `.glb` | HO-Cap's right-hand MANO and object annotations converted to the course format (README §6) in this camera's frame, **with errors added on purpose** (hand pose, shape and depth; object size, rotation and depth; focal length). It is an example of the file format, **not** ground truth and not a target accuracy. |
+| `data/example_01/frames/` | the colour frames of that camera and frame range, renumbered `000000.jpg` … `000149.jpg` and re-saved as JPEG (quality 90) |
+| `results/example_01.json`, `.glb` | HO-Cap's right-hand MANO and object annotations converted to the course format (README §5) in this camera's frame, **with errors added on purpose** (hand pose, shape and depth; object size, rotation and depth; focal length). It is an example of the file format, **not** ground truth and not a target accuracy. |
 | `overlays/example_01.mp4`, `.jpg` | output of `tools/overlay.py --side-by-side --grid` on the files above |
