@@ -38,6 +38,7 @@ Fork or copy this repository and keep this structure. Your code submission is th
 DATA302_Final_Project/
 ├── README.md          # this file (rules + exact output format)
 ├── examples/          # example_01.json + example_01.glb: a small, valid output (§6.8)
+├── tools/overlay.py   # draws your results on the video frames (§6.8)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # MANO_RIGHT.pkl goes here (NOT included, §3)
 ├── main/              # YOUR pipeline code
@@ -281,27 +282,18 @@ R_0 = [[ 0.7862, -0.3844, -0.4838],
        [ 0.5978,  0.2750,  0.7530]]
 ```
 
-4) **On your own videos**: project your results onto the frames, reading them back from the files
-(not from the arrays in memory), and look at the images. Green (object) and cyan (hand) must lie on
-the object and the hand in the video:
+4) **On your own videos**: draw your results on the frames with the provided tool. It reads your
+files exactly as the grader does (rotation layout, centred mesh, your intrinsics), so what you see is
+what is graded:
 
-```python
-import json, numpy as np, trimesh
-from PIL import Image, ImageDraw
-d = json.load(open(f"results/{video_id}.json"))
-K = np.array(d["intrinsics"]); V = np.array(d["mano"]["vertices"])
-mesh = trimesh.load(f"results/{video_id}.glb", force="mesh")
-rot6d = np.array(d["object"]["rot6d"]); t_obj = np.array(d["object"]["transl"])
-b1 = rot6d[:, :3] / np.linalg.norm(rot6d[:, :3], axis=1, keepdims=True)
-b2 = rot6d[:, 3:] - (b1 * rot6d[:, 3:]).sum(1, keepdims=True) * b1
-b2 /= np.linalg.norm(b2, axis=1, keepdims=True); R = np.stack([b1, b2, np.cross(b1, b2)], 1)
-proj = lambda X: X[:, :2] / X[:, 2:] * K[[0, 1], [0, 1]] + K[[0, 1], [2, 2]]
-for t in [0, d["num_frames"] // 2, d["num_frames"] - 1]:
-    img = Image.open(f"data/{video_id}/frames/{t:06d}.jpg").convert("RGB"); dr = ImageDraw.Draw(img)
-    for u, v in proj(mesh.vertices @ R[t].T + t_obj[t]): dr.point((u, v), fill=(0, 255, 0))
-    for u, v in proj(V[t]):                               dr.point((u, v), fill=(0, 200, 255))
-    img.save(f"check_{video_id}_{t:06d}.jpg")
+```bash
+python tools/overlay.py                    # every results/<video_id>.json -> overlays/<video_id>.jpg
+python tools/overlay.py --video easy_01 --num 12
+python tools/overlay.py --every 1 --frames-out   # one image per frame, e.g. to make a video
 ```
+
+The object is drawn as a shaded, semi-transparent green mesh, the hand as cyan vertices plus a
+21-joint skeleton (one colour per finger); both must lie on the object and the hand in the video.
 
 If they do not line up, a convention above is wrong (camera frame, units, rotation layout, mesh
 centring, MANO settings).
