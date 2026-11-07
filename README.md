@@ -3,64 +3,37 @@
 > **DRAFT** (2026-11-07). Items marked **[TBD]** will be fixed before release.
 
 > [!IMPORTANT]
-> **Read before you start**
-> 1. **Read this whole README carefully before you start.** It is the only specification of the
->    task, the rules and the output format, and it will be updated (watch this repository).
-> 2. **Follow the output format (§6) exactly.** A file that breaks the format is rejected. A file
->    that uses a different convention (units, camera frame, rotation layout, MANO settings, mesh
->    centring) is still read, but as a *different* hand or object, and is scored that way: correct
->    work in a wrong format gets a wrong score. Check every item of §6 and run the self-checks in §6.8.
-> 3. **Questions**: email the TAs at the addresses announced on the final project slides.
+> 1. **Read this README carefully before you start final project.** 
+> 2. **Follow the output format (§5) exactly.** A file that breaks the format is rejected. Please check every item of §5 and run the self-checks in §5.5.
 
-Design your own pipeline that takes a **monocular RGB video** (fixed camera, one right hand, one object)
-and reconstructs
-
+Design your own pipeline that takes a **monocular RGB video** (fixed camera) and reconstructs
 * the **MANO hand trajectory**,
 * the **object mesh** (real size), and
-* the **object 6D pose trajectory**,
+* the **object 6D pose trajectory**.
 
-all in the **camera frame** of the video.
-
-**Deadline: 2026-12-07** 
-
-**Contents**: [1 Layout](#1-repository-layout) · [2 Environment](#2-environment) ·
-[3 MANO](#3-mano) · [4 Data](#4-data) · [5 Pipeline rules](#5-your-pipeline) ·
-[6 Output format](#6-output-format) · [7 Leaderboard](#7-leaderboard-provisional) ·
-[8 Submission](#8-submission) · [9 Grading](#9-grading-draft)
+**Contents**: [1 Repository layout](#1-repository-layout) ·
+[2 MANO](#2-mano) · [3 Data](#3-data) · [4 Pipeline rules](#4-your-pipeline) ·
+[5 Output format](#5-output-format) · [6 Leaderboard](#6-leaderboard-provisional) ·
+[7 Submission](#7-submission) · [8 Grading](#8-grading-draft)
 
 ---
 
 ## 1. Repository layout
 
-Fork or copy this repository and keep this structure. Your code submission is this folder.
+Fork or clone this repository.
 
 ```
 DATA302_Final_Project/
-├── README.md          # this file (rules + exact output format)
-├── examples/          # a real example clip + a valid output for it + its overlay video (§6.8)
-├── tools/overlay.py   # draws your results on the input video -> overlay video (§6.8)
+├── README.md          # 
+├── examples/          # example_01.json + example_01.glb: a valid examples of final output (§5.5)
 ├── submodules/        # external models you use (git submodules)
-├── mano_models/       # MANO_RIGHT.pkl goes here (NOT included, §3)
-├── main/              # YOUR pipeline code
-├── data/videos/       # the input videos <video_id>.mp4 (§4) — not committed
-└── results/           # your outputs: <video_id>.json + <video_id>.glb (§6) — not committed
+├── mano_models/       # see §2
+├── main/              # implement your pipeline here
+├── data/              # see §3
+└── results/           # your outputs: <video_id>.json + <video_id>.glb (§5) 
 ```
 
-## 2. Environment
-
-Set up your own environment(s): the models you combine are your choice and have their own
-requirements. Only the output format needs two things in addition:
-
-* `smplx` to run the MANO forward pass, which needs the GitHub version of `chumpy` to read the
-  official `.pkl`: `pip install smplx git+https://github.com/mattloper/chumpy`
-  (`chumpy` 0.70 from PyPI fails to import with numpy ≥ 1.24).
-* `trimesh` to write the `.glb` mesh.
-* For the overlay tool (§6.8): `pip install numpy trimesh pillow imageio imageio-ffmpeg`
-  (`imageio-ffmpeg` installs its own ffmpeg binary).
-
-## 3. MANO
-
-The MANO model files may **not** be redistributed, so every student downloads them once:
+## 2. MANO
 
 1. Register at <https://mano.is.tue.mpg.de> and download **Models & Code**.
 2. Copy `MANO_RIGHT.pkl` into `mano_models/` → `mano_models/MANO_RIGHT.pkl`.
@@ -73,48 +46,40 @@ import smplx
 mano = smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)
 ```
 
-Check your setup with the example file (§6.8).
+Check your setup with the example file (§5.5).
 
-## 4. Data
+## 3. Data
 
-Videos: **[TBD: download link]**. Put them **exactly** here (paths in this README and in
-`tools/overlay.py` assume this layout, relative to the repository root):
+Download videos here: **<[LINK](https://drive.google.com/drive/folders/12O_mhWdEN5_P0Z08AX5L36V1zzegcjZ3?usp=drive_link)>**. Put them under `data/` and extract like below:
 
 ```
-data/videos/
-├── easy_01.mp4    easy_02.mp4
-├── normal_01.mp4  normal_02.mp4
-├── hard_01.mp4    hard_02.mp4
-├── videos.json        # {"easy_01": {"num_frames": F, "fps": 30, "width": W, "height": H}, ...}
-└── ATTRIBUTION.txt    # sources and licenses of the clips [TBD]
+data/<video_id>/
+└── frames/000000.jpg, 000001.jpg, …   # file number = frame index t
 ```
 
-* Frame `t` is the `t`-th frame (0-based) decoded from `<video_id>.mp4`; `F` is `num_frames` in
-  `videos.json`. Your results must have exactly `F` frames.
-* All videos show a **right hand**. **No camera intrinsics are given**: estimate them yourself
-  (e.g. MoGe-3), for the `width` × `height` of the video.
-* The clips come from public datasets; do not redistribute them outside this course.
+Video ids: `easy_01`, `easy_02`, `normal_01`, `normal_02`, `hard_01`, `hard_02`.
 
-## 5. Your pipeline
-
-* Put your code in `main/` and the external models you use in `submodules/` (see the READMEs there).
+## 4. Your pipeline
+* **Only** put your implemented pipeline code in `main/` (no debugging logs or visualizations).
 * **One pipeline and one configuration for all videos**: no per-video code or parameters.
 * Your code must regenerate your submitted results from `data/` (the TAs re-run a sample).
 
-**Allowed**: manual point prompts for SAM3 (no need to automate target detection; SAM3's video
+🙆 **Allowed**: manual point prompts for SAM3 (no need to automate target detection; SAM3's video
 propagation is useful). Manually choosing the best frame for SAM3D.
-**Not allowed**: any other manual intervention, e.g. manually adjusting the object scale; any
+
+🙅 **Not allowed**: any other manual intervention, e.g. manually adjusting the object scale; any
 ground truth or annotation of the test videos from any source.
-**AI tools**: allowed for writing code only, not for producing masks, 3D estimates, etc.
-[TBD: wording aligned with the course slides]
 
----
+👾 **AI tools**: allowed for writing code only, not for producing masks, 3D object model estimates, etc.
 
-## 6. Output format
 
-### 6.1 Files
+## 5. Output format
 
-For **every video**, two files in `results/`:
+### 5.1 Result files
+
+Save **two files for every video** in `results/`: a JSON file containing the hand and object
+trajectories, and a GLB file containing the object mesh. Use the video ID as the filename
+(e.g. `easy_01.json` and `easy_01.glb`). Submit all 12 files for the six videos.
 
 ```
 results/
@@ -125,24 +90,27 @@ results/
 └── …                # 6 videos → 12 files
 ```
 
-### 6.2 Conventions
+### 5.2 Conventions
 
 | Item | Convention |
 |---|---|
-| Camera frame | **OpenCV**: +x right, +y down, +z forward (into the scene). The camera is static; there is no world frame |
-| Length unit | **metres** (vertices, joints, translations) |
-| Intrinsics | **pixels**, for the resolution of the video (`width` × `height` in `videos.json`) |
-| Frames | `F = num_frames` of the video (`data/videos/videos.json`). Entry `t` corresponds to frame `t` (0-based) of `data/videos/<video_id>.mp4`. **Every** frame is filled (JSON has no NaN: interpolate frames where your method failed) |
-| Hand | right hand, `MANO_RIGHT.pkl`, `use_pca=False`, `flat_hand_mean=True` (§6.4) |
-| Object rotation | 6D representation, **row** layout (§6.5) |
-| Object mesh | `.glb`, real size, **centroid at the origin** (§6.6) |
+| Camera frame | **OpenCV**: +x right, +y down, +z forward (into the scene). Express all trajectories in this fixed camera frame |
+| Length unit | **meters** (vertices, joints, translations) |
+| Intrinsics | **pixels**, at the resolution of the input frames |
+| Frames | `F` is the total number of frames. Entry `t` corresponds to `frames/{t:06d}.jpg`. Provide results for **every frame**; interpolate missing estimates. All values must be finite (no NaN or Infinity) |
+| Hand | right hand, `MANO_RIGHT.pkl`, `use_pca=False`, `flat_hand_mean=True` (§5.3) |
+| Object rotation | 6D representation, **row** layout (§5.3) |
+| Object mesh | `.glb`, scale applied (real size), **centroid at the origin** (§5.4) |
 | Object pose | object → camera: `X_cam = R @ v + t` for every vertex `v` of the `.glb` |
-| Numbers | plain JSON numbers, rounded to 5 decimals (0.01 mm) |
 
-### 6.3 JSON keys
+### 5.3 JSON file (Hand and Object trajectory)
 
-The structure below is annotated for reading (`//` comments and `…` are not part of the file).
-`examples/results/example_01.json` is a complete, valid file.
+Each JSON file stores the camera intrinsics, MANO parameters and forward outputs, and object
+poses for all `F` frames. The `object.mesh` field names the corresponding GLB file in the same
+directory.
+
+The schema below includes comments and placeholders for clarity; omit them from your JSON.
+See `examples/example_01.json` for a complete example.
 
 ```text
 {
@@ -152,23 +120,24 @@ The structure below is annotated for reading (`//` comments and `…` are not pa
   "intrinsics": [[fx, 0, cx], [0, fy, cy], [0, 0, 1]],  // [3,3] your estimate, pixels
   "mano": {
     "pose":     [[… 48 …], …],          // [F,48] axis-angle (radians): global_orient (3) + 15 finger joints (45)
-    "transl":   [[x, y, z], …],         // [F,3]  metres, the `transl` argument of smplx.MANO
+    "transl":   [[x, y, z], …],         // [F,3]  meters, the `transl` argument of smplx.MANO
     "betas":    [… 10 …],               // [10]   one hand shape for the whole video
-    "vertices": [[[x, y, z] × 778], …], // [F,778,3] smplx.MANO output.vertices, camera frame, metres
-    "joints":   [[[x, y, z] × 16], …]   // [F,16,3]  smplx.MANO output.joints,   camera frame, metres
+    "vertices": [[[x, y, z] × 778], …], // [F,778,3] smplx.MANO output.vertices, camera frame, meters
+    "joints":   [[[x, y, z] × 16], …]   // [F,16,3]  smplx.MANO output.joints,   camera frame, meters
   },
   "object": {
     "mesh":   "easy_01.glb",            // file name of the mesh next to this JSON
     "rot6d":  [[… 6 …], …],             // [F,6] first two ROWS of R (object -> camera)
-    "transl": [[x, y, z], …]            // [F,3] metres, position of the mesh origin = mesh centroid
+    "transl": [[x, y, z], …]            // [F,3] meters, position of the mesh origin = mesh centroid
   }
 }
 ```
 
-### 6.4 Hand: MANO parameters and forward outputs
+#### Hand: MANO parameters and forward outputs
 
-`vertices` and `joints` must be **exactly** the output of this forward pass with your `pose`,
-`betas`, `transl` (the TAs re-run it to check):
+Compute `vertices` and `joints` from the submitted `pose`, `betas`, and `transl` using the
+forward pass below. The TAs will repeat this computation to verify that your parameters and
+outputs agree, allowing for rounding when saving the JSON.
 
 ```python
 import smplx, torch
@@ -182,22 +151,24 @@ vertices = out.vertices.detach().numpy()   # (F, 778, 3)
 joints   = out.joints.detach().numpy()     # (F, 16, 3)
 ```
 
-* **`flat_hand_mean=True`**: `hand_pose = 0` is the flat open hand. With `False` (smplx's default)
-  the MANO mean pose (about 33° per finger joint) is added to your numbers, and the same 48
-  numbers give another hand (on the example clip of §6.8 the fingertips move by about 6 cm).
-  Convert if your model uses the other setting.
-* **`transl`** is added to all vertices after the hand is rotated about its wrist joint (smplx). It
-  is **not** the wrist position (the wrist is about 9.6 cm from the MANO origin).
-* **`pose`** is axis-angle. The 15 finger rotations are relative to their parent joint. If your
-  model gives rotation matrices (e.g. HaPTIC, `(F, 16, 3, 3)`), convert them, e.g.
+* **Pose convention**: `pose` contains 48 axis-angle values in radians: 3 for the global
+  orientation and 45 for the 15 finger joints. Each finger rotation is relative to its parent
+  joint. If your model returns rotation matrices of shape `(F, 16, 3, 3)`, convert them with
   `scipy.spatial.transform.Rotation.from_matrix(R.reshape(-1, 3, 3)).as_rotvec().reshape(F, 48)`.
-* **`betas`**: one vector for the video. If your model predicts a shape per frame, pick or
-  average one and use it in the forward pass.
+* **Hand mean**: use `flat_hand_mean=True`, so `hand_pose = 0` represents a flat, open hand.
+  If your model uses `flat_hand_mean=False`, convert its pose parameters to this convention
+  before running the forward pass.
+* **Translation**: `transl` is the translation argument passed to `smplx.MANO`, in meters.
+  It is applied after rotation about the wrist joint and is **not the wrist position**.
+* **Hand shape**: use one `betas` vector for the entire video. If your model estimates a
+  different shape for each frame, select or average those estimates and use the resulting
+  vector for every frame.
 
-### 6.5 Object rotation: 6D representation, row layout
+#### Object: rotation and translation
 
-The 6 numbers are the **first two rows** of the rotation matrix `R` (object → camera), as in
-PyTorch3D `matrix_to_rotation_6d` / `rotation_6d_to_matrix`:
+`object.rot6d` stores the **first two rows** of the object-to-camera rotation matrix `R`,
+following the convention used by PyTorch3D
+`matrix_to_rotation_6d` / `rotation_6d_to_matrix`:
 
 ```python
 import numpy as np
@@ -211,37 +182,19 @@ b2 /= np.linalg.norm(b2, axis=1, keepdims=True)
 R = np.stack([b1, b2, np.cross(b1, b2)], axis=1)        # rows b1, b2, b3
 ```
 
-Using the first two **columns** instead gives the transposed (inverse) rotation and a wrong object
-pose, without any error message.
+Do not use the first two columns: decoding them as rows produces the transposed (inverse)
+rotation.
 
-### 6.6 Object mesh and translation: centroid at the origin
+`object.transl` stores the position of the object mesh centroid in the camera frame, in meters.
+Together, the rotation and translation map each saved mesh vertex to the camera frame:
+`X_cam = R @ v + t`. If you center the mesh before export, update the translations as shown
+in §5.4 **before writing the JSON**.
 
-* `<video_id>.glb` is the **final** object mesh, real size (any scale already applied), a single
-  triangle mesh without node transforms.
-* It is saved **translated so that its centroid is at the origin**:
-  `trimesh.load(path, force="mesh").centroid` must be `(0, 0, 0)` within 1 mm.
-* The pose applies directly to the saved vertices: `X_cam = R @ v + t`. Because the mesh is
-  centred, `t` is the position of the object centroid in the camera frame.
+#### Writing the JSON
 
-If your poses refer to an uncentred mesh (e.g. FoundationPose `ob_in_cam`), centre the mesh and
-move every translation by `R @ c`, so that the object stays where it is in the camera:
-
-```python
-import numpy as np, trimesh
-mesh = trimesh.load("my_object.glb", force="mesh")   # the mesh your poses R (F,3,3), t (F,3) refer to
-c = mesh.centroid                                     # area-weighted surface centroid, object frame
-mesh.vertices -= c                                    # centroid -> origin
-t = t + np.einsum("fij,j->fi", R, c)                  # R (v - c) + t_new = R v + t, for every frame
-mesh.export(f"results/{video_id}.glb")                # export with trimesh (no axis conversion)
-
-# check: the saved mesh is centred (tolerance 1 mm)
-assert np.abs(trimesh.load(f"results/{video_id}.glb", force="mesh").centroid).max() < 1e-3
-```
-
-Export the `.glb` with `trimesh`. Tools such as Blender convert axes (Z-up / Y-up) or add node
-transforms on export, which moves the vertices out of the frame that `R`, `t` refer to.
-
-### 6.7 Writing the JSON
+Convert arrays to plain JSON lists and round floating-point values to five decimal places.
+In this example, `K` is the camera intrinsic matrix, `rot6d` contains the encoded object
+rotations, and `t` contains the translations for the **centered mesh** (§5.4).
 
 ```python
 import json, numpy as np
@@ -257,30 +210,56 @@ with open(f"results/{video_id}.json", "w") as f:
     json.dump(sub, f, separators=(",", ":"), allow_nan=False)   # fails if anything is NaN
 ```
 
-A 300-frame video gives a JSON file of about 6 MB.
+`allow_nan=False` raises an error if any value is NaN or Infinity. Resolve missing or invalid
+estimates before saving.
 
-### 6.8 Example files and self-checks
+### 5.4 GLB file (Object mesh)
 
-`examples/` holds a short clip from a public dataset (not one of the course videos; source and
-license in `examples/ATTRIBUTION.md`) and a complete, valid output for it:
+Save the reconstructed object as `<video_id>.glb` with the following properties:
 
+* **Real size**: apply the estimated or optimized scale to the vertices and use meters.
+* **Single mesh**: export one triangle mesh without node transforms.
+* **Centered at the origin**: use the area-weighted surface centroid returned by
+  `trimesh.load(path, force="mesh").centroid`. Each coordinate must be within 1 mm of zero.
+
+#### Centering the mesh and updating its trajectory
+
+The JSON poses must refer to the vertices stored in the GLB. If your estimated poses refer to
+an uncentered mesh, subtract its centroid `c` from the vertices and add `R @ c` to each
+translation. This preserves the object's position in the camera frame:
+`R @ (v - c) + (t + R @ c) = R @ v + t`.
+
+Apply this correction before saving `object.transl` in the JSON (§5.3):
+
+```python
+import numpy as np, trimesh
+mesh = trimesh.load("my_object.glb", force="mesh")   # the mesh your poses R (F,3,3), t (F,3) refer to
+c = mesh.centroid                                     # area-weighted surface centroid, object frame
+mesh.vertices -= c                                    # centroid -> origin
+t = t + np.einsum("fij,j->fi", R, c)                  # R (v - c) + t_new = R v + t, for every frame
+mesh.export(f"results/{video_id}.glb")                # export with trimesh (no axis conversion)
+
+# check: the saved mesh is centered (tolerance 1 mm)
+assert np.abs(trimesh.load(f"results/{video_id}.glb", force="mesh").centroid).max() < 1e-3
 ```
-examples/
-├── videos/example_01.mp4         # input: 150 frames, 640 × 480, 30 fps (+ videos.json)
-├── results/example_01.json       # output in the format of this section
-├── results/example_01.glb        # object mesh, centred at its centroid
-└── overlays/example_01.mp4/.jpg  # tools/overlay.py drawing of the output on the input
-```
 
-The output was made from the dataset's annotations **with errors added on purpose** (hand pose and
-depth, object size, rotation and depth, focal length), so it is close to, but visibly not on, the hand
-and the object. It shows the file format, not the accuracy you should reach. Everything in it is
-consistent: `vertices` and `joints` are the MANO forward output of its `pose`, `betas`, `transl` with
-the course settings, and the mesh is centred at its centroid. Use it to check your setup:
+Export the GLB with `trimesh`, as above. Other exporters may convert axes or add node
+transforms; either change can make the saved mesh inconsistent with the JSON poses.
+
+### 5.5 Example files and self-checks
+
+The files `examples/example_01.json` and `examples/example_01.glb` form a complete example
+for a synthetic three-frame sequence; no video frames are provided. The hand vertices and
+joints were computed from the included MANO parameters, and the object is a 12 × 6 × 4 cm
+box centered at the origin.
+
+#### Check the MANO output and mesh centroid
+
+Use the example files to check your MANO setup and mesh loading:
 
 ```python
 import json, numpy as np, torch, smplx, trimesh
-ex = json.load(open("examples/results/example_01.json"))
+ex = json.load(open("examples/example_01.json"))
 
 # 1) MANO settings: your forward pass must reproduce the example vertices
 mano = smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)
@@ -290,60 +269,51 @@ out = mano(global_orient=pose[:, :3], hand_pose=pose[:, 3:],
            transl=torch.tensor(ex["mano"]["transl"], dtype=torch.float32))
 print(np.abs(out.vertices.detach().numpy() - np.array(ex["mano"]["vertices"])).max())   # < 1e-4
 
-# 2) mesh centred at its centroid
-print(trimesh.load("examples/results/example_01.glb", force="mesh").centroid)           # ~ (0, 0, 0)
+# 2) mesh centered at its centroid
+print(trimesh.load("examples/example_01.glb", force="mesh").centroid)                   # ~ (0, 0, 0)
 ```
 
-3) **Rotation layout**: decoding `ex["object"]["rot6d"][0]` with the code in §6.5 must give
-(reading the 6 numbers as columns instead would give the transpose)
+#### Check the rotation convention
+
+Decode `ex["object"]["rot6d"][0]` using the code in §5.3. The result should match the matrix
+below to four decimal places:
 
 ```
-R_0 = [[ 0.6139, -0.1837, -0.7677],
-       [-0.3414,  0.8151, -0.4680],
-       [ 0.7118,  0.5494,  0.4376]]
+R_0 = [[ 0.7862, -0.3844, -0.4838],
+       [ 0.1564,  0.8812, -0.4461],
+       [ 0.5978,  0.2750,  0.7530]]
 ```
 
-4) **Overlay tool on the example**: this must reproduce `examples/overlays/example_01.mp4`:
+#### Check your results on the input frames
 
-```bash
-python tools/overlay.py --video examples/videos/example_01.mp4 --json examples/results/example_01.json \
-                        --out overlays/example_01.mp4 --side-by-side --grid
+Reload your saved JSON and GLB files, project their vertices onto the input frames, and inspect
+the overlays. The code below draws the object in green and the hand in cyan for the first,
+middle, and last frames. Check that they align with the visible object and hand.
+
+```python
+import json, numpy as np, trimesh
+from PIL import Image, ImageDraw
+d = json.load(open(f"results/{video_id}.json"))
+K = np.array(d["intrinsics"]); V = np.array(d["mano"]["vertices"])
+mesh = trimesh.load(f"results/{video_id}.glb", force="mesh")
+rot6d = np.array(d["object"]["rot6d"]); t_obj = np.array(d["object"]["transl"])
+b1 = rot6d[:, :3] / np.linalg.norm(rot6d[:, :3], axis=1, keepdims=True)
+b2 = rot6d[:, 3:] - (b1 * rot6d[:, 3:]).sum(1, keepdims=True) * b1
+b2 /= np.linalg.norm(b2, axis=1, keepdims=True); R = np.stack([b1, b2, np.cross(b1, b2)], 1)
+proj = lambda X: X[:, :2] / X[:, 2:] * K[[0, 1], [0, 1]] + K[[0, 1], [2, 2]]
+for t in [0, d["num_frames"] // 2, d["num_frames"] - 1]:
+    img = Image.open(f"data/{video_id}/frames/{t:06d}.jpg").convert("RGB"); dr = ImageDraw.Draw(img)
+    for u, v in proj(mesh.vertices @ R[t].T + t_obj[t]): dr.point((u, v), fill=(0, 255, 0))
+    for u, v in proj(V[t]):                               dr.point((u, v), fill=(0, 200, 255))
+    img.save(f"check_{video_id}_{t:06d}.jpg")
 ```
 
-![example overlay](examples/overlays/example_01.jpg)
-
-5) **On your own videos**: draw your results on the input video with the provided tool. It reads
-your files exactly as the grader does (rotation layout, centred mesh, your intrinsics), so what you
-see is what is graded. Install `pip install numpy trimesh pillow imageio imageio-ffmpeg`, then from
-the repository root:
-
-```bash
-python tools/overlay.py --video_id easy_01        # one video, default paths (below)
-python tools/overlay.py --all                     # every results/*.json
-python tools/overlay.py --video data/videos/easy_01.mp4 --json results/easy_01.json \
-                        --glb results/easy_01.glb --out overlays/easy_01.mp4   # explicit paths
-```
-
-| Argument | Default |
-|---|---|
-| `--video` | `data/videos/<video_id>.mp4` |
-| `--json` | `results/<video_id>.json` |
-| `--glb` | the `object.mesh` file next to the JSON (`results/<video_id>.glb`) |
-| `--out` | `overlays/<video_id>.mp4` |
-| `--side-by-side` | off: input and overlay next to each other |
-| `--grid` | off: also save an 8-frame overview `overlays/<video_id>.jpg` |
-
-The output is an mp4 with the same frames and fps as the input. The object is drawn as a shaded,
-semi-transparent green mesh, the hand as cyan vertices plus a 21-joint skeleton (one colour per
-finger); both must lie on the object and the hand in the video. The tool stops with an error if the
-video and your JSON do not have the same number of frames.
-
-If they do not line up, a convention above is wrong (camera frame, units, rotation layout, mesh
-centring, MANO settings).
+If the overlays do not align, check the camera intrinsics, coordinate conventions, units,
+rotation layout, mesh centering, and MANO settings, as well as the reconstruction itself.
 
 ---
 
-## 7. Leaderboard (provisional)
+## 6. Leaderboard (provisional)
 
 > Provisional: the details of this section are still being decided [TBD].
 
@@ -354,24 +324,25 @@ centring, MANO settings).
   * as **individual files**, selecting all `.json` and `.glb` files together in one upload.
 
   File names must be **exactly** `<video_id>.json` and `<video_id>.glb`, e.g. `easy_01.json` +
-  `easy_01.glb`, …, `hard_02.json` + `hard_02.glb` (lower case, as the video files in `data/videos/`).
+  `easy_01.glb`, …, `hard_02.json` + `hard_02.glb` (lower case, as the video folders in `data/`).
   Every `.json` needs its `.glb` with the same name in the same upload. A missing or misnamed file
   means that video is missing.
 * **How often**: no limit on the number of uploads. Each upload is graded automatically within a
   few minutes.
 * **What you see after an upload**:
   * a format check for each video: `OK`, or the reason it was rejected (missing file, wrong shape,
-    NaN, values that are not plausible in metres, mesh not centred, …);
+    NaN, values that are not plausible in meters, mesh not centred, …);
   * your scores for each video and your overall score.
 * **What the leaderboard shows**: the scores of everyone's latest upload under a pseudonym you
   choose at upload time, sortable by each column [TBD: columns].
 * **Missing or rejected videos** get the lowest possible score for that video [TBD].
 * **Scores on the leaderboard are feedback**: they are computed on a part of the frames and compared
   with the class at the time of the last update [TBD]. The final grade is computed after the
-  deadline on all frames from your LMS submission (§8).
+  deadline on all frames from your LMS submission (§7).
 * Do not try to probe or reverse-engineer the ground truth through the leaderboard.
 
-## 8. Submission
+
+## 7. Submission
 
 ```bash
 cd results && zip ../results.zip *.json *.glb
@@ -379,15 +350,5 @@ cd results && zip ../results.zip *.json *.glb
 
 | Where | What |
 |---|---|
-| **Gradescope** (leaderboard) | `results.zip` — any number of uploads [TBD: link] |
-| **LMS** (final, by the deadline) | report (PDF), code (this folder, without `data/`, `mano_models/*.pkl`, checkpoints), and the **same** `results.zip` |
-
-The leaderboard is feedback (§7). The final grade is computed after the deadline from the LMS submission.
-
-## 9. Grading (draft)
-
-* Quantitative benchmark scores of your results, per video, weighted by difficulty:
-  object trajectory error, hand trajectory error, contact error [TBD: final metric list].
-  Before scoring, translations are aligned to the ground truth using the object **centroid**.
-* Design and analysis of your post-optimization.
-* Report clarity and code quality.
+| **Leaderboard** | `results.zip` — any number of uploads [TBD: link] |
+| **LMS** | report (PDF), code (make a zip file which only contains main) |
