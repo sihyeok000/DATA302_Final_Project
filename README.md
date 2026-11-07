@@ -10,7 +10,7 @@
 >    that uses a different convention (units, camera frame, rotation layout, MANO settings, mesh
 >    centring) is still read, but as a *different* hand or object, and is scored that way: correct
 >    work in a wrong format gets a wrong score. Check every item of §6 and run the self-checks in §6.8.
-> 3. **Questions**: email the TAs at the addresses announced on the final project slides
+> 3. **Questions**: email the TAs at the addresses announced on the final project slides.
 
 Design your own pipeline that takes a **monocular RGB video** (fixed camera, one right hand, one object)
 and reconstructs
