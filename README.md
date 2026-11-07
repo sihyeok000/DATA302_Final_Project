@@ -25,7 +25,8 @@ Fork or clone this repository.
 ```
 DATA302_Final_Project/
 ├── README.md          # 
-├── examples/          # example_01.json + example_01.glb: a valid examples of final output (§5.5)
+├── examples/          # an example clip, a valid output for it, and its overlay (§5.5)
+├── tools/overlay.py   # draws a result on its video (§5.5)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # see §2
 ├── main/              # implement your pipeline here
@@ -110,7 +111,7 @@ poses for all `F` frames. The `object.mesh` field names the corresponding GLB fi
 directory.
 
 The schema below includes comments and placeholders for clarity; omit them from your JSON.
-See `examples/example_01.json` for a complete example.
+See `examples/results/example_01.json` for a complete example.
 
 ```text
 {
@@ -248,10 +249,22 @@ transforms; either change can make the saved mesh inconsistent with the JSON pos
 
 ### 5.5 Example files and self-checks
 
-The files `examples/example_01.json` and `examples/example_01.glb` form a complete example
-for a synthetic three-frame sequence; no video frames are provided. The hand vertices and
-joints were computed from the included MANO parameters, and the object is a 12 × 6 × 4 cm
-box centered at the origin.
+`examples/` contains a short clip from a public dataset (not one of the course videos; source
+and license in `examples/ATTRIBUTION.md`) and a complete, valid output for it:
+
+```
+examples/
+├── videos/example_01.mp4         # input: 150 frames, 640 × 480, 30 fps (+ videos.json)
+├── results/example_01.json       # output in the format of §5.3
+├── results/example_01.glb        # object mesh, centered at its centroid (§5.4)
+└── overlays/example_01.mp4/.jpg  # the output drawn on the input (tools/overlay.py)
+```
+
+The output was made from the dataset's annotations **with errors added on purpose** (hand pose
+and depth, object size, rotation and depth, focal length), so it lies close to, but visibly off,
+the hand and the object. It illustrates the file format, not a target accuracy. The hand vertices
+and joints were computed from the included MANO parameters, and the mesh is centered at its
+centroid.
 
 #### Check the MANO output and mesh centroid
 
@@ -259,7 +272,7 @@ Use the example files to check your MANO setup and mesh loading:
 
 ```python
 import json, numpy as np, torch, smplx, trimesh
-ex = json.load(open("examples/example_01.json"))
+ex = json.load(open("examples/results/example_01.json"))
 
 # 1) MANO settings: your forward pass must reproduce the example vertices
 mano = smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)
@@ -270,7 +283,7 @@ out = mano(global_orient=pose[:, :3], hand_pose=pose[:, 3:],
 print(np.abs(out.vertices.detach().numpy() - np.array(ex["mano"]["vertices"])).max())   # < 1e-4
 
 # 2) mesh centered at its centroid
-print(trimesh.load("examples/example_01.glb", force="mesh").centroid)                   # ~ (0, 0, 0)
+print(trimesh.load("examples/results/example_01.glb", force="mesh").centroid)           # ~ (0, 0, 0)
 ```
 
 #### Check the rotation convention
@@ -279,10 +292,23 @@ Decode `ex["object"]["rot6d"][0]` using the code in §5.3. The result should mat
 below to four decimal places:
 
 ```
-R_0 = [[ 0.7862, -0.3844, -0.4838],
-       [ 0.1564,  0.8812, -0.4461],
-       [ 0.5978,  0.2750,  0.7530]]
+R_0 = [[ 0.6139, -0.1837, -0.7677],
+       [-0.3414,  0.8151, -0.4680],
+       [ 0.7118,  0.5494,  0.4376]]
 ```
+
+#### Check the example overlay
+
+`examples/overlays/example_01.mp4` shows the example output drawn on its input video (left:
+input, right: overlay; object in green, hand vertices in cyan with a 21-joint skeleton).
+`tools/overlay.py` reproduces it (`pip install numpy trimesh pillow imageio imageio-ffmpeg`):
+
+```bash
+python tools/overlay.py --video examples/videos/example_01.mp4 --json examples/results/example_01.json \
+                        --out overlays/example_01.mp4 --side-by-side --grid
+```
+
+![example overlay](examples/overlays/example_01.jpg)
 
 #### Check your results on the input frames
 
