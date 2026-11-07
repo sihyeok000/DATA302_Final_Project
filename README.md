@@ -2,6 +2,17 @@
 
 > **DRAFT** (2026-11-07). Items marked **[TBD]** will be fixed before release.
 
+> [!IMPORTANT]
+> **Read before you start**
+> 1. **Read this whole README carefully before you start.** It is the only specification of the
+>    task, the rules and the output format, and it will be updated (watch this repository).
+> 2. **Follow the output format (§6) exactly.** A file that breaks the format is rejected. A file
+>    that uses a different convention (units, camera frame, rotation layout, MANO settings, mesh
+>    centring) is still read, but as a *different* hand or object, and is scored that way: correct
+>    work in a wrong format gets a wrong score. Check every item of §6 and run the self-checks in §6.8.
+> 3. **Questions**: email the TAs at the addresses announced on the final project slides
+>    (subject: `[DATA302 Final] …`).
+
 Design your own pipeline that takes a **monocular RGB video** (fixed camera, one right hand, one object)
 and reconstructs
 
@@ -15,7 +26,8 @@ all in the **camera frame** of the video.
 
 **Contents**: [1 Layout](#1-repository-layout) · [2 Environment](#2-environment) ·
 [3 MANO](#3-mano) · [4 Data](#4-data) · [5 Pipeline rules](#5-your-pipeline) ·
-[6 Output format](#6-output-format) · [7 Submission](#7-submission) · [8 Grading](#8-grading-draft)
+[6 Output format](#6-output-format) · [7 Leaderboard](#7-leaderboard-provisional) ·
+[8 Submission](#8-submission) · [9 Grading](#9-grading-draft)
 
 ---
 
@@ -297,7 +309,28 @@ centring, MANO settings).
 
 ---
 
-## 7. Submission
+## 7. Leaderboard (provisional)
+
+> Provisional: the details of this section are still being decided [TBD].
+
+* **Where**: Gradescope, assignment "Final Project Leaderboard" [TBD: course link / entry code].
+* **What to upload**: `results.zip` with all `<video_id>.json` and `<video_id>.glb` files at the top
+  level of the zip (no sub-folders). Upload the zip itself; do not unzip it.
+* **How often**: no limit on the number of uploads. Each upload is graded automatically within a
+  few minutes.
+* **What you see after an upload**:
+  * a format check for each video: `OK`, or the reason it was rejected (missing file, wrong shape,
+    NaN, values that are not plausible in metres, mesh not centred, …);
+  * your scores for each video and your overall score.
+* **What the leaderboard shows**: the scores of everyone's latest upload under a pseudonym you
+  choose at upload time, sortable by each column [TBD: columns].
+* **Missing or rejected videos** get the lowest possible score for that video [TBD].
+* **Scores on the leaderboard are feedback**: they are computed on a part of the frames and compared
+  with the class at the time of the last update [TBD]. The final grade is computed after the
+  deadline on all frames from your LMS submission (§8).
+* Do not try to probe or reverse-engineer the ground truth through the leaderboard.
+
+## 8. Submission
 
 ```bash
 cd results && zip ../results.zip *.json *.glb
@@ -308,9 +341,9 @@ cd results && zip ../results.zip *.json *.glb
 | **Gradescope** (leaderboard) | `results.zip` — any number of uploads [TBD: link] |
 | **LMS** (final, by the deadline) | report (PDF), code (this folder, without `data/`, `mano_models/*.pkl`, checkpoints), and the **same** `results.zip` |
 
-The leaderboard is feedback. The final grade is computed after the deadline from the LMS submission.
+The leaderboard is feedback (§7). The final grade is computed after the deadline from the LMS submission.
 
-## 8. Grading (draft)
+## 9. Grading (draft)
 
 * Quantitative benchmark scores of your results, per video, weighted by difficulty:
   object trajectory error, hand trajectory error, contact error [TBD: final metric list].
@@ -318,7 +351,3 @@ The leaderboard is feedback. The final grade is computed after the deadline from
 * Your scoring rule for object pose candidates.
 * Design and analysis of your post-optimization.
 * Report clarity and code quality.
-
-## 9. Reference
-
-* EasyHOI [TBD: link]
