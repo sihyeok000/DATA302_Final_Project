@@ -38,11 +38,11 @@ Fork or copy this repository and keep this structure. Your code submission is th
 DATA302_Final_Project/
 ├── README.md          # this file (rules + exact output format)
 ├── examples/          # example_01.json + example_01.glb: a small, valid output (§6.8)
-├── tools/overlay.py   # draws your results on the video frames (§6.8)
+├── tools/overlay.py   # draws your results on the input video -> overlay video (§6.8)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # MANO_RIGHT.pkl goes here (NOT included, §3)
 ├── main/              # YOUR pipeline code
-├── data/              # the videos (§4) — not committed
+├── data/videos/       # the input videos <video_id>.mp4 (§4) — not committed
 └── results/           # your outputs: <video_id>.json + <video_id>.glb (§6) — not committed
 ```
 
@@ -55,6 +55,8 @@ requirements. Only the output format needs two things in addition:
   official `.pkl`: `pip install smplx git+https://github.com/mattloper/chumpy`
   (`chumpy` 0.70 from PyPI fails to import with numpy ≥ 1.24).
 * `trimesh` to write the `.glb` mesh.
+* For the overlay tool (§6.8): `pip install numpy trimesh pillow imageio imageio-ffmpeg`
+  (`imageio-ffmpeg` installs its own ffmpeg binary).
 
 ## 3. MANO
 
@@ -75,16 +77,23 @@ Check your setup with the example file (§6.8).
 
 ## 4. Data
 
-Videos: **[TBD: download link]**. Put them under `data/`:
+Videos: **[TBD: download link]**. Put them **exactly** here (paths in this README and in
+`tools/overlay.py` assume this layout, relative to the repository root):
 
 ```
-data/<video_id>/
-├── frames/000000.jpg, 000001.jpg, …   # all F frames; file number = frame index t
-└── meta.json                          # {"video_id", "level", "num_frames", "fps", "width", "height"}
+data/videos/
+├── easy_01.mp4    easy_02.mp4
+├── normal_01.mp4  normal_02.mp4
+├── hard_01.mp4    hard_02.mp4
+├── videos.json        # {"easy_01": {"num_frames": F, "fps": 30, "width": W, "height": H}, ...}
+└── ATTRIBUTION.txt    # sources and licenses of the clips [TBD]
 ```
 
-Video ids: `easy_01`, `easy_02`, `normal_01`, `normal_02`, `hard_01`, `hard_02`. All videos show a
-**right hand**. **No camera intrinsics are given**: estimate them yourself (e.g. MoGe-3).
+* Frame `t` is the `t`-th frame (0-based) decoded from `<video_id>.mp4`; `F` is `num_frames` in
+  `videos.json`. Your results must have exactly `F` frames.
+* All videos show a **right hand**. **No camera intrinsics are given**: estimate them yourself
+  (e.g. MoGe-3), for the `width` × `height` of the video.
+* The clips come from public datasets; do not redistribute them outside this course.
 
 ## 5. Your pipeline
 
@@ -122,8 +131,8 @@ results/
 |---|---|
 | Camera frame | **OpenCV**: +x right, +y down, +z forward (into the scene). The camera is static; there is no world frame |
 | Length unit | **metres** (vertices, joints, translations) |
-| Intrinsics | **pixels**, for the resolution of the given frames (`width` × `height` in `meta.json`) |
-| Frames | `F = num_frames` of the video. Entry `t` corresponds to `frames/{t:06d}.jpg`. **Every** frame is filled (JSON has no NaN: interpolate frames where your method failed) |
+| Intrinsics | **pixels**, for the resolution of the video (`width` × `height` in `videos.json`) |
+| Frames | `F = num_frames` of the video (`data/videos/videos.json`). Entry `t` corresponds to frame `t` (0-based) of `data/videos/<video_id>.mp4`. **Every** frame is filled (JSON has no NaN: interpolate frames where your method failed) |
 | Hand | right hand, `MANO_RIGHT.pkl`, `use_pca=False`, `flat_hand_mean=True` (§6.4) |
 | Object rotation | 6D representation, **row** layout (§6.5) |
 | Object mesh | `.glb`, real size, **centroid at the origin** (§6.6) |
@@ -282,18 +291,31 @@ R_0 = [[ 0.7862, -0.3844, -0.4838],
        [ 0.5978,  0.2750,  0.7530]]
 ```
 
-4) **On your own videos**: draw your results on the frames with the provided tool. It reads your
-files exactly as the grader does (rotation layout, centred mesh, your intrinsics), so what you see is
-what is graded:
+4) **On your own videos**: draw your results on the input video with the provided tool. It reads
+your files exactly as the grader does (rotation layout, centred mesh, your intrinsics), so what you
+see is what is graded. Install `pip install numpy trimesh pillow imageio imageio-ffmpeg`, then from
+the repository root:
 
 ```bash
-python tools/overlay.py                    # every results/<video_id>.json -> overlays/<video_id>.jpg
-python tools/overlay.py --video easy_01 --num 12
-python tools/overlay.py --every 1 --frames-out   # one image per frame, e.g. to make a video
+python tools/overlay.py --video_id easy_01        # one video, default paths (below)
+python tools/overlay.py --all                     # every results/*.json
+python tools/overlay.py --video data/videos/easy_01.mp4 --json results/easy_01.json \
+                        --glb results/easy_01.glb --out overlays/easy_01.mp4   # explicit paths
 ```
 
-The object is drawn as a shaded, semi-transparent green mesh, the hand as cyan vertices plus a
-21-joint skeleton (one colour per finger); both must lie on the object and the hand in the video.
+| Argument | Default |
+|---|---|
+| `--video` | `data/videos/<video_id>.mp4` |
+| `--json` | `results/<video_id>.json` |
+| `--glb` | the `object.mesh` file next to the JSON (`results/<video_id>.glb`) |
+| `--out` | `overlays/<video_id>.mp4` |
+| `--side-by-side` | off: input and overlay next to each other |
+| `--grid` | off: also save an 8-frame overview `overlays/<video_id>.jpg` |
+
+The output is an mp4 with the same frames and fps as the input. The object is drawn as a shaded,
+semi-transparent green mesh, the hand as cyan vertices plus a 21-joint skeleton (one colour per
+finger); both must lie on the object and the hand in the video. The tool stops with an error if the
+video and your JSON do not have the same number of frames.
 
 If they do not line up, a convention above is wrong (camera frame, units, rotation layout, mesh
 centring, MANO settings).
@@ -311,7 +333,7 @@ centring, MANO settings).
   * as **individual files**, selecting all `.json` and `.glb` files together in one upload.
 
   File names must be **exactly** `<video_id>.json` and `<video_id>.glb`, e.g. `easy_01.json` +
-  `easy_01.glb`, …, `hard_02.json` + `hard_02.glb` (lower case, as the video folders in `data/`).
+  `easy_01.glb`, …, `hard_02.json` + `hard_02.glb` (lower case, as the video files in `data/videos/`).
   Every `.json` needs its `.glb` with the same name in the same upload. A missing or misnamed file
   means that video is missing.
 * **How often**: no limit on the number of uploads. Each upload is graded automatically within a
