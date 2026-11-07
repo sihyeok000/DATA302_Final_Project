@@ -313,8 +313,15 @@ centring, MANO settings).
 > Provisional: the details of this section are still being decided [TBD].
 
 * **Where**: Gradescope, assignment "Final Project Leaderboard" [TBD: course link / entry code].
-* **What to upload**: `results.zip` with all `<video_id>.json` and `<video_id>.glb` files at the top
-  level of the zip (no sub-folders). Upload the zip itself; do not unzip it.
+* **What to upload**: all 12 result files, either
+  * as **one zip** (`results.zip`, the files at the top level of the zip, no sub-folders; upload the
+    zip itself), or
+  * as **individual files**, selecting all `.json` and `.glb` files together in one upload.
+
+  File names must be **exactly** `<video_id>.json` and `<video_id>.glb`, e.g. `easy_01.json` +
+  `easy_01.glb`, …, `hard_02.json` + `hard_02.glb` (lower case, as the video folders in `data/`).
+  Every `.json` needs its `.glb` with the same name in the same upload. A missing or misnamed file
+  means that video is missing.
 * **How often**: no limit on the number of uploads. Each upload is graded automatically within a
   few minutes.
 * **What you see after an upload**:
