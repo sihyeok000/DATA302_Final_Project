@@ -1,6 +1,6 @@
 # results/
 
-Your outputs, one pair per video (format: `docs/SUBMISSION_FORMAT.md`):
+Your outputs, one pair per video (format: main README, §6):
 
 ```
 results/easy_01.json   results/easy_01.glb
