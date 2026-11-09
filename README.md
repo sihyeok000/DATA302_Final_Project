@@ -1,9 +1,9 @@
-<h1 align="center">Final Project : Hand-Object Interaction Reconstruction from Monocular RGB Video (DATA302 2026)</h1>
+<h1 align="center">Final Project : Hand-Object Interaction Reconstruction only from Monocular RGB Video (DATA302 2026)</h1>
 
 
 > [!IMPORTANT]
 > 1. **Read this README carefully YOURSELF before you start final project.** 
-> 2. **Follow the output format (§5) exactly.** A file that breaks the format is rejected. 
+> 2. **Follow the output format ([§5](#5-final-output-format)) exactly.** A file that breaks the format is rejected. 
 
 Design your own pipeline that takes a **monocular RGB video** (fixed camera) and reconstructs
 * the **MANO hand trajectory**,
@@ -12,13 +12,13 @@ Design your own pipeline that takes a **monocular RGB video** (fixed camera) and
 
 **Contents**
 
-- [1 Repository layout](#1-repository-layout)
-- [2 MANO](#2-mano)
-- [3 Input videos](#3-input-videos)
-- [4 Implementation](#4-your-pipeline)
-- [5 Final output format](#5-final-output-format)
-- [6 Leaderboard](#6-leaderboard)
-- [7 Submission](#7-submission)
+- [1. Repository layout](#1-repository-layout)
+- [2. MANO](#2-mano)
+- [3. Input videos](#3-input-videos)
+- [4. Implementation](#4-your-pipeline)
+- [5. Final output format](#5-final-output-format)
+- [6. Leaderboard](#6-leaderboard)
+- [7. Submission](#7-submission)
 
 ---
 
