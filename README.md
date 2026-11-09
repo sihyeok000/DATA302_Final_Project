@@ -1,26 +1,30 @@
-# DATA302 Final Project — Hand-Object Interaction Reconstruction from Monocular RGB Video
+<h1 align="center">Final Project : Hand-Object Interaction Reconstruction from Monocular RGB Video (DATA302 2026)</h1>
 
-> **DRAFT** (2026-11-07). Items marked **[TBD]** will be fixed before release.
 
 > [!IMPORTANT]
-> 1. **Read this README carefully before you start final project.** 
-> 2. **Follow the output format (§5) exactly.** A file that breaks the format is rejected. Please check every item of §5 and run the self-checks in §5.3.
+> 1. **Read this README carefully YOURSELF before you start final project.** 
+> 2. **Follow the output format (§5) exactly.** A file that breaks the format is rejected. 
 
 Design your own pipeline that takes a **monocular RGB video** (fixed camera) and reconstructs
 * the **MANO hand trajectory**,
 * the **object mesh** (real size), and
 * the **object 6D pose trajectory**.
 
-**Contents**: [1 Repository layout](#1-repository-layout) ·
-[2 MANO](#2-mano) · [3 Data](#3-data) · [4 Pipeline rules](#4-your-pipeline) ·
-[5 Final output format](#5-final-output-format) · [6 Leaderboard](#6-leaderboard-provisional) ·
-[7 Submission](#7-submission)
+**Contents**
+
+- [1 Repository layout](#1-repository-layout)
+- [2 MANO](#2-mano)
+- [3 Input videos](#3-input-videos)
+- [4 Implementation](#4-your-pipeline)
+- [5 Final output format](#5-final-output-format)
+- [6 Leaderboard](#6-leaderboard)
+- [7 Submission](#7-submission)
 
 ---
 
 ## 1. Repository layout
 
-Fork or clone this repository.
+Fork or clone this repository to start your final project.
 
 ```
 DATA302_Final_Project/
@@ -47,7 +51,7 @@ import smplx
 mano = smplx.MANO("mano_models", is_rhand=True, use_pca=False, flat_hand_mean=True)
 ```
 
-## 3. Data
+## 3. Input videos
 
 Download videos here: **<[LINK](https://drive.google.com/drive/folders/12O_mhWdEN5_P0Z08AX5L36V1zzegcjZ3?usp=drive_link)>**. Put them under `data/` and extract like below:
 
@@ -58,27 +62,39 @@ data/<video_id>/
 
 Video ids: `easy_01`, `easy_02`, `normal_01`, `normal_02`, `hard_01`, `hard_02`.
 
-## 4. Your pipeline
+## 4. Your HOI reconstruction pipeline
+
 * **Only** put your implemented pipeline code in `main/` (no debugging logs or visualizations).
 * **One pipeline and one configuration for all videos**: no per-video code or parameters.
 * Your code must regenerate your submitted results from `data/` (the TAs re-run a sample).
 
-🙆 **Allowed**: manual point prompts for SAM3 (no need to automate target detection; SAM3's video
-propagation is useful). Manually choosing the best frame for SAM3D.
+#### 🙆 Allowed
 
-🙅 **Not allowed**: any other manual intervention, e.g. manually adjusting the object scale; any
-ground truth or annotation of the test videos from any source.
+- **Manual prompts:** point prompts for SAM3; target detection does not need to be automated.
+- **Frame selection:** manually choosing the best frame for SAM3D.
+- **External models:** open-source, off-the-shelf models.
 
-👾 **AI tools**: allowed for writing code only, not for producing masks, 3D object model estimates, etc.
+#### 🙅 Not allowed
+
+- **Other manual intervention:** e.g. manually adjusting the object scale.
+- **Cheating.**
+- **External models:** commercial external models.
+
+👾 **Frontier LLMs** (GPT, Claude, etc.) are allowed for coding only — not for generating masks, 3D object estimates, or any other results.
 
 
 ## 5. Final output format
 
+> **Follow the output format below carefully when preparing your leaderboard submission.**
+
 ### Result files
 
-Save **two files for every video** in `results/`: (1) a **JSON** file containing the hand and object
-trajectories, and (2) a **GLB** file containing the object mesh. Use the video ID as the filename
-(e.g. `easy_01.json` and `easy_01.glb`). 
+Save **two files for every video** in `results/`:
+
+1. A **JSON** file containing the hand and object trajectories. ([§5.1](#51-json-file-hand-and-object-trajectory))
+2. A **GLB** file containing the object mesh. ([§5.2](#52-glb-file-object-mesh))
+
+Use the **video ID as the filename** (e.g. `easy_01.json` and `easy_01.glb`).
 
 ```
 results/
@@ -104,13 +120,20 @@ results/
 
 ### 5.1 JSON file (Hand and Object trajectory)
 
-Save the final reconstructed hand and object trajectorIes and estimated intrinsics as `<video_id>.json`.
-Specifially, each JSON file must contain the camera intrinsics, MANO parameters and forward outputs, and object
-poses for all `F` frames. The `object.mesh` field names the corresponding GLB file in the same
-directory.
+Save the final reconstructed hand and object trajectories and estimated intrinsics as **`<video_id>.json`**.
+
+Specifically, each JSON file must contain:
+
+- The **camera intrinsics**.
+- **MANO parameters and forward outputs**.
+- **Object poses** for all `F` frames.
+
+The `object.mesh` field names the corresponding GLB file in the **same directory**.
+
+**JSON structure**
 
 The schema below includes comments and placeholders for clarity; omit them from your JSON.
-See `examples/results/example_01.json` for a complete example.
+See [`examples/results/example_01.json`](examples/results/example_01.json) for a complete example.
 
 ```text
 {
@@ -136,8 +159,10 @@ See `examples/results/example_01.json` for a complete example.
 #### 5.1.1 Hand trajectory
 
 Compute `vertices` and `joints` of MANO hand mesh from the `pose`, `betas`, and `transl` using the MANO
-forward pass below. The TAs will repeat this computation to verify that your parameters and
-outputs agree, allowing for rounding when saving the JSON.
+forward pass below.
+
+The TAs will repeat this computation to verify that your parameters and outputs agree,
+allowing for rounding when saving the JSON.
 
 ```python
 import smplx, torch
@@ -151,20 +176,27 @@ vertices = out.vertices.detach().numpy()   # (F, 778, 3)
 joints   = out.joints.detach().numpy()     # (F, 16, 3)
 ```
 
+**Parameter conventions**
+
 * **Pose convention**: `pose` contains 48 axis-angle values in radians: 3 for the global
   orientation and 45 for the 15 finger joints. Each finger rotation is relative to its parent
   joint. If your model returns rotation matrices of shape `(F, 16, 3, 3)`, convert them with
   `scipy.spatial.transform.Rotation.from_matrix(R.reshape(-1, 3, 3)).as_rotvec().reshape(F, 48)`.
+
 * **Hand mean**: use `flat_hand_mean=True`, so `hand_pose = 0` represents a flat, open hand.
   If your model uses `flat_hand_mean=False`, convert its pose parameters to this convention
   before running the forward pass.
+
 * **Translation**: `transl` is the translation argument passed to `smplx.MANO`, in meters.
   It is applied after rotation about the wrist joint and is **not the wrist position**.
+
 * **Hand shape**: use one `betas` vector for the entire video. If your model estimates a
   different shape for each frame, select or average those estimates and use the resulting
   vector for every frame.
 
 #### 5.1.2 Object trajectory
+
+**Rotation — `object.rot6d`**
 
 `object.rot6d` stores the **first two rows** of the object-to-camera rotation matrix `R`,
 following the convention used by PyTorch3D
@@ -182,19 +214,31 @@ b2 /= np.linalg.norm(b2, axis=1, keepdims=True)
 R = np.stack([b1, b2, np.cross(b1, b2)], axis=1)        # rows b1, b2, b3
 ```
 
-Do not use the first two columns: decoding them as rows produces the transposed (inverse)
-rotation.
+> **Do not use the first two columns**: decoding them as rows produces the transposed (inverse)
+> rotation.
+
+**Translation — `object.transl`**
 
 `object.transl` stores the position of the **object mesh centroid** (§5.2.1) in the camera frame, in meters.
+
 Together, the rotation and translation map each saved mesh vertex to the camera frame:
-`X_cam = R @ v + t`. If you center the mesh before export, update the translations as shown
+
+```text
+X_cam = R @ v + t
+```
+
+If you center the mesh before export, update the translations as shown
 in §5.2.1 **before writing the JSON**.
 
 #### 5.1.3 Writing the JSON
 
-Convert arrays to plain JSON lists and round floating-point values to five decimal places.
-In this example, `K` is the camera intrinsic matrix, `rot6d` contains the encoded object
-rotations, and `t` contains the translations for the **centered mesh** (§5.2.1).
+Convert arrays to **plain JSON lists** and round floating-point values to **five decimal places**.
+
+In this example:
+
+- `K` is the camera intrinsic matrix.
+- `rot6d` contains the encoded object rotations.
+- `t` contains the translations for the **centered mesh** (§5.2.1).
 
 ```python
 import json, numpy as np
@@ -210,26 +254,36 @@ with open(f"results/{video_id}.json", "w") as f:
     json.dump(sub, f, separators=(",", ":"), allow_nan=False)   # fails if anything is NaN
 ```
 
-`allow_nan=False` raises an error if any value is NaN or Infinity. Resolve missing or invalid
-estimates before saving.
+> `allow_nan=False` raises an error if any value is **NaN or Infinity**. Resolve missing or invalid
+> estimates before saving.
 
 ### 5.2 GLB file (Object mesh)
 
-Save the final reconstructed object as `<video_id>.glb` with the following properties:
+Save the final reconstructed object as **`<video_id>.glb`** with the following properties:
 
 * **Single mesh**: export one triangle mesh without node transforms.
+
 * **Real size**: apply the estimated or optimized scale to the vertices and use meters.
+
 * **Centroid at the origin**: use the area-weighted surface centroid returned by
-  `trimesh.load(path, force="mesh").centroid`. Each coordinate must be within 1 mm of zero.
+  `trimesh.load(path, force="mesh").centroid`. Each coordinate must be **within 1 mm of zero**.
 
 #### 5.2.1 Centering the mesh and updating its trajectory
 
-The JSON poses must refer to the vertices stored in the GLB. If your estimated poses refer to
-an uncentered mesh, subtract its centroid `c` from the vertices and add `R @ c` to each
-translation. This preserves the object's position in the camera frame:
-`R @ (v - c) + (t + R @ c) = R @ v + t`.
+The JSON poses must refer to the vertices stored in the GLB.
 
-Apply this correction before saving `object.transl` in the JSON:
+If your estimated poses refer to an uncentered mesh:
+
+1. Subtract its centroid `c` from the vertices.
+2. Add `R @ c` to each translation.
+
+This preserves the object's position in the camera frame:
+
+```text
+R @ (v - c) + (t + R @ c) = R @ v + t
+```
+
+Apply this correction **before saving `object.transl`** in the JSON ([§5.1](#51-json-file-hand-and-object-trajectory)):
 
 ```python
 import numpy as np, trimesh
@@ -243,8 +297,8 @@ mesh.export(f"results/{video_id}.glb")                # export with trimesh (no 
 assert np.abs(trimesh.load(f"results/{video_id}.glb", force="mesh").centroid).max() < 1e-3
 ```
 
-Export the GLB with `trimesh`, as above. Other exporters may convert axes or add node
-transforms; either change can make the saved mesh inconsistent with the JSON poses.
+> Export the GLB with **`trimesh`**, as above. Other exporters may convert axes or add node
+> transforms; either change can make the saved mesh inconsistent with the JSON poses.
 
 ### 5.3 Example files and self-checks
 
@@ -338,10 +392,11 @@ rotation layout, mesh centering, and MANO settings, as well as the reconstructio
 
 ---
 
-## 6. Leaderboard (provisional)
+## 6. Leaderboard
 
-> Provisional: the details of this section are still being decided [TBD].
+**Stay tuned! We will launch the leaderboard within 2–3 weeks.**
 
+<!--
 * **Where**: Gradescope, assignment "Final Project Leaderboard" [TBD: course link / entry code].
 * **What to upload**: all 12 result files, either
   * as **one zip** (`results.zip`, the files at the top level of the zip, no sub-folders; upload the
@@ -365,15 +420,13 @@ rotation layout, mesh centering, and MANO settings, as well as the reconstructio
   with the class at the time of the last update [TBD]. The final grade is computed after the
   deadline on all frames from your LMS submission (§7).
 * Do not try to probe or reverse-engineer the ground truth through the leaderboard.
-
+-->
 
 ## 7. Submission
 
-```bash
-cd results && zip ../results.zip *.json *.glb
-```
+**Deadline: 12/8.**
 
 | Where | What |
 |---|---|
-| **Leaderboard** | `results.zip` — any number of uploads [TBD: link] |
-| **LMS** | `report.pdf`, `main.zip` — report and pipeline code (zip only the `main/` folder) |
+| **Leaderboard** | `results.zip` — [TBD: link] |
+| **LMS** | `report.pdf`, `main.zip` (zip only the `main/` folder) |
