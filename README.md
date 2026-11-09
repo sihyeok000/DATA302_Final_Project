@@ -394,7 +394,7 @@ rotation layout, mesh centering, and MANO settings, as well as the reconstructio
 
 ## 6. Leaderboard
 
-**Stay tuned! We will launch the leaderboard within 2–3 weeks.**
+**Stay tuned! We will launch the leaderboard within 2 weeks.**
 
 <!--
 * **Where**: Gradescope, assignment "Final Project Leaderboard" [TBD: course link / entry code].
