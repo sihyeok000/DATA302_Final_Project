@@ -31,6 +31,7 @@ DATA302_Final_Project/
 ├── README.md          # 
 ├── examples/          # an example clip, a valid output for it, and its overlay (§5.3)
 ├── tools/overlay.py   # draws a result on its input frames -> overlay video (§5.3)
+├── tools/mesh_view.py # renders the hand and object meshes from 3 views -> video (§5.3)
 ├── submodules/        # external models you use (git submodules)
 ├── mano_models/       # see §2
 ├── main/              # implement your pipeline here
@@ -310,8 +311,11 @@ examples/
 ├── data/example_01/frames/       # input: 000000.jpg … 000149.jpg (640 × 480), same layout as §3
 ├── results/example_01.json       # output in the format of §5.1
 ├── results/example_01.glb        # object mesh, centered at its centroid (§5.2)
-└── overlays/example_01.mp4/.jpg  # the output drawn on the input (tools/overlay.py)
+├── overlays/example_01.mp4       # the output drawn on the input (tools/overlay.py)
+└── mesh_views/example_01.mp4     # the output meshes from three views (tools/mesh_view.py)
 ```
+
+(The `.gif` next to each `.mp4` is the same video, converted for this page.)
 
 The output was made from the dataset's annotations **with errors added on purpose** (hand pose
 and depth, object size, rotation and depth, focal length), so it lies close to, but visibly off,
@@ -358,10 +362,31 @@ input, right: overlay; object in green, hand vertices in cyan with a 21-joint sk
 
 ```bash
 python tools/overlay.py --frames examples/data/example_01/frames --json examples/results/example_01.json \
-                        --out overlays/example_01.mp4 --side-by-side --grid
+                        --out overlays/example_01.mp4 --side-by-side
 ```
 
-![example overlay](examples/overlays/example_01.jpg)
+![example overlay](examples/overlays/example_01.gif)
+
+#### Check the example mesh
+
+The overlay shows where the meshes are, not their shape. `examples/mesh_views/example_01.mp4`
+shows the hand and object meshes of the example output in four panels: the input frame, and the
+meshes as seen from the input camera, from the right side, and from above. `tools/mesh_view.py`
+reproduces it (also needs `pip install smplx` and `mano_models/MANO_RIGHT.pkl` (§2) for the hand
+faces):
+
+```bash
+python tools/mesh_view.py --frames examples/data/example_01/frames --json examples/results/example_01.json \
+                          --out mesh_views/example_01.mp4
+# example_01 object: 1002 vertices, 2000 faces, 23.0 x 9.2 x 7.6 cm, 1 part(s), closed
+```
+
+![example mesh views](examples/mesh_views/example_01.gif)
+
+Only the front of each face is drawn, so holes and flipped faces appear as missing surface. Use it
+on your own results (`python tools/mesh_view.py --video_id easy_01`, or `--all`) to check that the
+object is one clean, closed surface of a plausible size, and that the hand is neither floating in
+front of the object nor sunk into it along the depth axis (side and top views).
 
 #### Check your results on the input frames
 

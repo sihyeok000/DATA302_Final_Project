@@ -9,6 +9,7 @@ results/*.glb
 results.zip
 check_*.jpg
 /overlays/
+/mesh_views/
 
 # python / weights
 __pycache__/

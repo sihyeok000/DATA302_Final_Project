@@ -111,12 +111,12 @@ def draw_frame(img, r, t):
     return img
 
 
-def save_grid(tiles, path, width=480):
+def save_grid(tiles, path, width=480, cols=4):
     tiles = [im.resize((width, round(im.height * width / im.width))) for im in tiles]
     h = tiles[0].height
-    sheet = Image.new("RGB", (4 * width, (len(tiles) + 3) // 4 * h))
+    sheet = Image.new("RGB", (cols * width, (len(tiles) + cols - 1) // cols * h))
     for i, tile in enumerate(tiles):
-        sheet.paste(tile, (i % 4 * width, i // 4 * h))
+        sheet.paste(tile, (i % cols * width, i // cols * h))
     sheet.save(path, quality=90)
 
 
