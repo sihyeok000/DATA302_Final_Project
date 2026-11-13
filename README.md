@@ -424,7 +424,7 @@ rotation layout, mesh centering, and MANO settings, as well as the reconstructio
 
 ## 7. Submission
 
-**Deadline: 12/8.**
+**Deadline: 12/7 23:59.**
 
 | Where | What |
 |---|---|
