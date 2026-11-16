@@ -7,7 +7,7 @@
 
 > [!IMPORTANT]
 > **🔔 Updates (Nov 16)**
-> - **`normal_02` and `hard_02` were exchanged.** Download the two folders again or rename them ([§3](#3-input-videos)).
+> - **`normal_02` and `hard_02` were exchanged.** Download the two videos again or swap their names ([§3](#3-input-videos)).
 > - New requirements for the GLB file, for example at most 10,000 faces ([§5.2](#52-glb-file-object-mesh)).
 > - New tool `tools/mesh_view.py` to check your meshes ([§5.3](#53-example-files-and-self-checks)).
 > - The leaderboard is now open ([§6](#6-leaderboard)).
@@ -71,8 +71,8 @@ data/<video_id>/
 
 > [!WARNING]
 > **`normal_02` and `hard_02` were exchanged.** The video that was `normal_02` is now `hard_02`,
-> and the video that was `hard_02` is now `normal_02`. Download the two folders again from the link
-> above, or rename your local folders. Your results must use the new ids. A result with the old
+> and the video that was `hard_02` is now `normal_02`. Download the two videos again from the link
+> above, or swap the names of your local copies (videos, extracted frames and results). Your results must use the new ids. A result with the old
 > numbering is rejected by the format check (wrong `num_frames`).
 
 All videos are 30 fps.
