@@ -86,6 +86,8 @@ All videos are 30 fps.
 | `hard_01` | 601 |
 | `hard_02` | 481 |
 
+![The six input videos](examples/input_videos.gif)
+
 `extreme_01` and `extreme_02` are **not graded**. Including them in your report is optional.
 
 ## 4. Your HOI reconstruction pipeline
