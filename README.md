@@ -3,7 +3,14 @@
 
 > [!IMPORTANT]
 > 1. **Read this README carefully YOURSELF before you start final project.** 
-> 2. **Follow the output format ([§5](#5-final-output-format)) exactly.** A file that breaks the format is rejected. 
+> 2. **Follow the output format ([§5](#5-final-output-format)) exactly.** A file that breaks the format is rejected.
+
+> [!IMPORTANT]
+> **🔔 Updates (Nov 16)**
+> - **`normal_02` and `hard_02` were exchanged.** Download the two folders again or rename them ([§3](#3-input-videos)).
+> - New requirements for the GLB file, for example at most 10,000 faces ([§5.2](#52-glb-file-object-mesh)).
+> - New tool `tools/mesh_view.py` to check your meshes ([§5.3](#53-example-files-and-self-checks)).
+> - The leaderboard is now open ([§6](#6-leaderboard)).
 
 Design your own pipeline that takes a **monocular RGB video** (fixed camera) and reconstructs
 * the **MANO hand trajectory**,
@@ -60,8 +67,26 @@ Download videos here: **<[LINK](https://drive.google.com/drive/folders/12O_mhWdE
 data/<video_id>/
 └── frames/000000.jpg, 000001.jpg, …   # file number = frame index t
 ```
+**🔔 Update (Nov 16)**
 
-Video ids: `easy_01`, `easy_02`, `normal_01`, `normal_02`, `hard_01`, `hard_02`.
+> [!WARNING]
+> **`normal_02` and `hard_02` were exchanged.** The video that was `normal_02` is now `hard_02`,
+> and the video that was `hard_02` is now `normal_02`. Download the two folders again from the link
+> above, or rename your local folders. Your results must use the new ids. A result with the old
+> numbering is rejected by the format check (wrong `num_frames`).
+
+All videos are 30 fps.
+
+| Video id | Frames |
+|---|---|
+| `easy_01` | 131 |
+| `easy_02` | 451 |
+| `normal_01` | 321 |
+| `normal_02` | 331 |
+| `hard_01` | 601 |
+| `hard_02` | 481 |
+
+`extreme_01` and `extreme_02` are **not graded**. Including them in your report is optional.
 
 ## 4. Your HOI reconstruction pipeline
 
@@ -269,6 +294,16 @@ Save the final reconstructed object as **`<video_id>.glb`** with the following p
 * **Centroid at the origin**: use the area-weighted surface centroid returned by
   `trimesh.load(path, force="mesh").centroid`. Each coordinate must be **within 1 mm of zero**.
 
+**🔔 Update (Nov 16)**
+
+* **At most 10,000 faces** (and 30,000 vertices). Decimate the mesh before export.
+
+* **Self-contained file**: binary glTF 2.0 (`.glb`), at most 50 MB, all data embedded (no external textures or buffers).
+
+* **Plausible size**: the bounding-box diagonal must be between 0.01 m and 1.0 m.
+
+* **The object only**: the `.glb` must contain the mesh of the object and nothing else. Remove the hand, the table and any floating fragments, and make sure the surface is closed (no holes, no flipped faces). Look at your mesh with `tools/mesh_view.py` (§5.3, "Check the example mesh") before you upload.
+
 #### 5.2.1 Centering the mesh and updating its trajectory
 
 The JSON poses must refer to the vertices stored in the GLB.
@@ -419,33 +454,92 @@ rotation layout, mesh centering, and MANO settings, as well as the reconstructio
 
 ## 6. Leaderboard
 
-**Stay tuned! We will launch the leaderboard within 2 weeks.**
+### 6.1 Getting started
 
-<!--
-* **Where**: Gradescope, assignment "Final Project Leaderboard" [TBD: course link / entry code].
-* **What to upload**: all 12 result files, either
-  * as **one zip** (`results.zip`, the files at the top level of the zip, no sub-folders; upload the
-    zip itself), or
-  * as **individual files**, selecting all `.json` and `.glb` files together in one upload.
+* **Where**: Gradescope, course **DATA302**, assignment "Final Project Leaderboard"
+Sign up at gradescope.com, click **"+ Add a course"** on the course dashboard and enter the **entry code given in the LMS announcement**. Enter your real name and your student ID correctly when you sign up. If you cannot join, email the TA right away (lt4545@korea.ac.kr).
 
-  File names must be **exactly** `<video_id>.json` and `<video_id>.glb`, e.g. `easy_01.json` +
-  `easy_01.glb`, …, `hard_02.json` + `hard_02.glb` (lower case, as the video folders in `data/`).
-  Every `.json` needs its `.glb` with the same name in the same upload. A missing or misnamed file
-  means that video is missing.
-* **How often**: no limit on the number of uploads. Each upload is graded automatically within a
-  few minutes.
-* **What you see after an upload**:
-  * a format check for each video: `OK`, or the reason it was rejected (missing file, wrong shape,
-    NaN, values that are not plausible in meters, mesh not centred, …);
-  * your scores for each video and your overall score.
-* **What the leaderboard shows**: the scores of everyone's latest upload under a pseudonym you
-  choose at upload time, sortable by each column [TBD: columns].
-* **Missing or rejected videos** get the lowest possible score for that video [TBD].
-* **Scores on the leaderboard are feedback**: they are computed on a part of the frames and compared
-  with the class at the time of the last update [TBD]. The final grade is computed after the
-  deadline on all frames from your LMS submission (§7).
-* Do not try to probe or reverse-engineer the ground truth through the leaderboard.
--->
+* **Leaderboard name**: when you upload, Gradescope asks for a leaderboard name. Use any nickname; it does not have to identify you.
+
+* **Results are submitted on Gradescope only.** Do not upload result files to the LMS (§7).
+
+### 6.2 What to upload
+
+For **each of the six videos**, write one `.json` and one `.glb` **in the output format of §5**
+(12 files). **Compress the 12 files into one `.zip` and upload that zip** (`results.zip`, the files
+at the top level of the zip, no sub-folders):
+
+```
+results.zip
+├── easy_01.json
+├── easy_01.glb
+├── easy_02.json
+├── easy_02.glb
+├── normal_01.json
+├── normal_01.glb
+├── normal_02.json
+├── normal_02.glb
+├── hard_01.json
+├── hard_01.glb
+├── hard_02.json
+└── hard_02.glb
+```
+
+* File names must be exactly `<video_id>.json` and `<video_id>.glb` (lower case).
+* **Always upload all six videos.** Every upload is graded on its own; a video that is missing from the upload gets 0, even if you submitted it before.
+* There is no limit on the number of uploads. Each upload is graded automatically, usually within 3–5 minutes. **Submit early: close to the deadline, grading can take longer, and you may not have time to fix a rejected file.**
+
+### 6.3 What you see after an upload
+
+* **Format check** for each video: `OK`, or the reason the video was rejected (missing file, wrong shape, values that are not plausible in meters, mesh not centered, too many faces, …). A rejected video gets 0; fix the file and upload again.
+* **Scores**: for each video, its score and the three category scores (Object, Hand, Interaction), and your Overall score.
+* **Leaderboard**: Overall, the six video scores, and `Object avg.`, `Hand avg.`, `Interaction avg.` of everyone's active submission, under the leaderboard name you enter when you upload.
+
+### 6.4 Scoring
+
+* **Every frame is graded**, at the 30 fps of the given videos. The `t`-th entry of your result (starting from 0) must correspond to the input frame `frames/{t:06d}.jpg`; for example, entry 0 is `frames/000000.jpg`. Do not skip or resample frames.
+* In every frame, each of three categories passes or fails. What each category looks at:
+  * **Object** — is the reconstructed object where the real object is? Its **position**, its
+    **rotation** and its **shape** (your mesh, placed with your pose) are compared with the reference.
+  * **Hand** — is the hand right? The **hand pose** (articulation of the fingers) and the
+    **position of the hand** in the camera frame are compared with the reference.
+  * **Interaction** — are your hand and your object physically consistent with each other? The hand
+    must **touch the object** where the real hand touches the real object, and must **not sink
+    into** the object.
+
+  The category score of a video is the **percentage of its frames that pass** (0–100). The exact
+  metrics and pass criteria are not published.
+* **Score of a video** = 0.4 × Object + 0.4 × Hand + 0.2 × Interaction.
+* **Overall** = weighted mean of the six video scores, with weights 0.10 for each easy video, 0.15 for each normal video and 0.25 for each hard video (0.10 + 0.10 + 0.15 + 0.15 + 0.25 + 0.25 = 1).
+* A missing or rejected video counts as 0.
+* **The leaderboard is ranked by Overall. The quantitative part of the project grade is given relative to the class, by your rank on the leaderboard at the deadline.**
+
+### 6.5 Alignment with the reference
+
+To mitigate the effect of the scale-depth ambiguity on the evaluation, the grader aligns your result with the reference (ground truth) by **one constant translation** per video before it compares the global object trajectory and the global hand trajectory:
+
+* one translation for the object trajectory, calculated using the object mesh centroids of all frames, and
+* one translation for the hand trajectory, calculated using the hand joints of all frames.
+
+Each translation is the average offset between your result and the reference over the frames of the
+video, and the same translation is applied to every frame. Therefore:
+
+* a constant offset of the whole trajectory (for example from a depth or scale ambiguity of the camera translation) is removed;
+* **scale is not adjusted** in this trajectory alignment: the hand and the object must have their real size in meters.
+
+**Finger pose** (the articulation of the hand) is evaluated separately in every frame, after a frame-wise Procrustes Alignment (rotation, translation, and scale) of your hand with the reference.
+
+**Object rotation** is compared relative to the start of the video: what counts is how the object rotates over the video, not the orientation of the coordinate frame of your mesh. You may choose the mesh frame freely (with the centroid at the origin, §5.2). A rotation error at the start of the video therefore affects every frame.
+
+Interaction is evaluated between **your** hand and **your** object exactly as submitted, without any alignment.
+
+### 6.6 Notes
+
+* The submission that is **active** on Gradescope at the deadline counts (by default your latest upload; you can activate an earlier one under "Submission History").
+* Your submitted results must be reproducible from your `main.zip` (§4). Editing result files by hand or using annotations of the source data is not allowed. **Cheating & Plagiarism = 'F' grade.**
+* **If Gradescope shows an error** that is not a format-check message (for example "The autograder could not finish grading this submission"), email the TA at lt4545@korea.ac.kr with a description
+  of the situation and a screenshot of the page.
+* If the grader is updated, all submissions are regraded automatically; you do not need to upload again.
 
 ## 7. Submission
 
@@ -453,5 +547,5 @@ rotation layout, mesh centering, and MANO settings, as well as the reconstructio
 
 | Where | What |
 |---|---|
-| **Leaderboard** | `results.zip` — [TBD: link] |
+| **Leaderboard** | `results.zip` ([§6](#6-leaderboard)) |
 | **LMS** | `report.pdf`, `main.zip` (zip only the `main/` folder) |
